@@ -1,0 +1,1 @@
+insert into t_test values (1, 'teddy');

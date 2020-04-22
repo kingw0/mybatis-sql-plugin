@@ -1,0 +1,15 @@
+package com.intros.mybatis.plugin.generator;
+
+import com.intros.mybatis.plugin.SqlType;
+import org.apache.ibatis.builder.annotation.ProviderContext;
+
+/**
+ * @author teddy
+ * @since 2019/08/23
+ */
+public class DefaultSqlGeneratorFactory implements SqlGeneratorFactory {
+    @Override
+    public SqlGenerator createGenerator(ProviderContext context, SqlType sqlType) {
+        return new DefaultSqlGenerator(context, sqlType);
+    }
+}
