@@ -49,7 +49,11 @@ public class Keywords {
 
     public static final String KW_IN = " IN ";
 
-    public static final String COMMA = ",";
+    public static final String KW_ASC = " ASC";
+
+    public static final String KW_DESC = " DESC";
+
+    public static final String SEMICOLON_WITH_SPACE = "; ";
 
     public static final String COMMA_WITH_SPACE = ", ";
 

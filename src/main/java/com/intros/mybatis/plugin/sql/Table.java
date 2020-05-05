@@ -6,7 +6,7 @@ import com.intros.mybatis.plugin.utils.StringUtils;
 /**
  * @param <S>
  */
-public class Table<S extends SQL<S>> extends SQLPart<S> {
+public class Table<S extends Sql<S>> extends SqlPart<S> {
     private static final Class<Table> THIS_CLASS = Table.class;
 
     static {
@@ -32,7 +32,7 @@ public class Table<S extends SQL<S>> extends SQLPart<S> {
 
     @Override
     public S write(S sql) {
-        if (StringUtils.isBlank(this.alias)) {
+        if (!StringUtils.isBlank(this.alias)) {
             return sql.append(this.table).append(Keywords.SPACE).append(this.alias);
         } else {
             return sql.append(this.table);

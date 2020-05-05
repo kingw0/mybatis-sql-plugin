@@ -1,10 +1,10 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.LogicalConditionOp;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 
-public class Logic<S extends SQL<S>> extends Condition<S> {
+public class Logic<S extends Sql<S>> extends Condition<S> {
     private static final Class<Logic> THIS_CLASS = Logic.class;
 
     static {
@@ -20,7 +20,7 @@ public class Logic<S extends SQL<S>> extends Condition<S> {
         this.expr = expr;
     }
 
-    public static <S extends SQL<S>> Logic<S> not(Expression<S> expr) {
+    public static <S extends Sql<S>> Logic<S> not(Expression<S> expr) {
         return instance(THIS_CLASS, LogicalConditionOp.NOT, expr);
     }
 

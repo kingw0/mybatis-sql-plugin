@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_AND;
@@ -12,7 +12,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_BETWEEN;
  * @param <S>
  * @author teddy
  */
-public class Between<S extends SQL<S>> extends Condition<S> {
+public class Between<S extends Sql<S>> extends Condition<S> {
     private static final Class<Between> THIS_CLASS = Between.class;
 
     static {
@@ -31,7 +31,7 @@ public class Between<S extends SQL<S>> extends Condition<S> {
         this.upper = upper;
     }
 
-    public static <S extends SQL<S>> Between<S> between(Expression<S> expr, Expression<S> lower, Expression<S> upper) {
+    public static <S extends Sql<S>> Between<S> between(Expression<S> expr, Expression<S> lower, Expression<S> upper) {
         return instance(THIS_CLASS, expr, lower, upper);
     }
 

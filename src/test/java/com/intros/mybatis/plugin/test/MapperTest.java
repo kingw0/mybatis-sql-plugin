@@ -1,4 +1,4 @@
-package com.intros.mybatis.plugin.text;
+package com.intros.mybatis.plugin.test;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;

@@ -1,5 +1,8 @@
-package com.intros.mybatis.plugin.text;
+package com.intros.mybatis.plugin.test;
 
+import com.intros.mybatis.plugin.MappingInfoRegistry;
+import com.intros.mybatis.plugin.annotation.Column;
+import com.intros.mybatis.plugin.annotation.Table;
 import com.intros.mybatis.plugin.sql.Delete;
 import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.Select;
@@ -15,12 +18,22 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
-import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.BracketExpr.priority;
+import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
+    @Test
+    public void testSelectFromClass() {
+    }
+
+    @Test
+    public void testInsertFromClass() {
+        System.out.println(MappingInfoRegistry.getInstance().insert(Child.class));
+        System.out.println(MappingInfoRegistry.getInstance().insert(Parent.class));
+    }
+
     @Test
     public void testSelect() {
         Select select = new Select().columns("id_", "name_", "age_").columns(column("grade_").as("g"),
@@ -90,5 +103,20 @@ public class SQLTest {
                 .build();
 
         new Runner(opt).run();
+    }
+
+    @Table(name = "t_parent_")
+    public static class Parent {
+        @Column(name = "id_")
+        private long id;
+    }
+
+    @Table(name = "t_child_")
+    public static class Child extends Parent {
+        @Column(name = "name_")
+        private String name;
+
+        @Column(name = "age_")
+        private long age;
     }
 }

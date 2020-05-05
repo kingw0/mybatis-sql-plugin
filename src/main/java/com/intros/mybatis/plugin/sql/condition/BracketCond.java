@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_BRACKET;
 import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
@@ -9,7 +9,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
  * @param <S>
  * @author teddy
  */
-public class BracketCond<S extends SQL<S>> extends Condition<S> {
+public class BracketCond<S extends Sql<S>> extends Condition<S> {
     private static final Class<BracketCond> THIS_CLASS = BracketCond.class;
 
     static {
@@ -22,7 +22,7 @@ public class BracketCond<S extends SQL<S>> extends Condition<S> {
         this.cond = cond;
     }
 
-    public static <S extends SQL<S>> BracketCond<S> priority(Condition<S> cond) {
+    public static <S extends Sql<S>> BracketCond<S> priority(Condition<S> cond) {
         return instance(THIS_CLASS, cond);
     }
 

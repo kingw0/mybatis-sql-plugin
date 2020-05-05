@@ -9,15 +9,4 @@ public @interface Column {
     String name();
 
     String alias() default "";
-
-    boolean update() default true;
-
-    boolean insert() default true;
-
-    /**
-     * indicate if this column is used to join child table
-     *
-     * @return
-     */
-    boolean join() default false;
 }

@@ -1,7 +1,7 @@
 package com.intros.mybatis.plugin.sql.condition;
 
 import com.intros.mybatis.plugin.sql.Joiner;
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
@@ -12,7 +12,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  * @param <S>
  * @author teddy
  */
-public class In<S extends SQL<S>> extends Condition<S> {
+public class In<S extends Sql<S>> extends Condition<S> {
     private static final Class<In> THIS_CLASS = In.class;
 
     static {
@@ -28,7 +28,7 @@ public class In<S extends SQL<S>> extends Condition<S> {
         this.values = values;
     }
 
-    public static <S extends SQL<S>> In<S> in(Expression<S> expr, Expression<S>... values) {
+    public static <S extends Sql<S>> In<S> in(Expression<S> expr, Expression<S>... values) {
         return instance(THIS_CLASS, expr, values);
     }
 

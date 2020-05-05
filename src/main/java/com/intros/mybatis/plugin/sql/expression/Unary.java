@@ -1,9 +1,9 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.UnaryExpressionOp;
 
-public class Unary<S extends SQL<S>> extends Expression<S> {
+public class Unary<S extends Sql<S>> extends Expression<S> {
     private static final Class<Unary> THIS_CLASS = Unary.class;
 
     static {
@@ -19,11 +19,11 @@ public class Unary<S extends SQL<S>> extends Expression<S> {
         this.op = op;
     }
 
-    public static <S extends SQL<S>> Unary<S> identity(Expression<S> expr) {
+    public static <S extends Sql<S>> Unary<S> identity(Expression<S> expr) {
         return instance(THIS_CLASS, expr, UnaryExpressionOp.IDENTITY);
     }
 
-    public static <S extends SQL<S>> Unary<S> negation(Expression<S> expr) {
+    public static <S extends Sql<S>> Unary<S> negation(Expression<S> expr) {
         return instance(THIS_CLASS, expr, UnaryExpressionOp.NEGATION);
     }
 

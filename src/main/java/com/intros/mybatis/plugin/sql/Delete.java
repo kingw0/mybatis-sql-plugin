@@ -8,7 +8,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_WHERE;
 /**
  * @author teddy
  */
-public class Delete extends SQL<Delete> {
+public class Delete extends Sql<Delete> {
     public Delete(String table) {
         append(KW_DELETE).append(table);
     }

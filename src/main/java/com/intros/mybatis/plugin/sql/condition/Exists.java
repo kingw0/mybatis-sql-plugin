@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 
@@ -9,20 +9,20 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  *
  * @param <S>
  */
-public class Exists<S extends SQL<S>> extends Condition<S> {
+public class Exists<S extends Sql<S>> extends Condition<S> {
     private static final Class<Exists> THIS_CLASS = Exists.class;
 
     static {
-        registerFactory(THIS_CLASS, initArgs -> new Exists((SQL) initArgs[0]));
+        registerFactory(THIS_CLASS, initArgs -> new Exists((Sql) initArgs[0]));
     }
 
-    private SQL<S> sql;
+    private Sql<S> sql;
 
-    protected Exists(SQL<S> sql) {
+    protected Exists(Sql<S> sql) {
         this.sql = sql;
     }
 
-    public static <S extends SQL<S>> Exists<S> exists(SQL<S> sql) {
+    public static <S extends Sql<S>> Exists<S> exists(Sql<S> sql) {
         return instance(THIS_CLASS, sql);
     }
 

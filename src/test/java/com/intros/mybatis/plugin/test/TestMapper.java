@@ -1,4 +1,4 @@
-package com.intros.mybatis.plugin.text;
+package com.intros.mybatis.plugin.test;
 
 import com.intros.mybatis.plugin.ResolvedSqlProvider;
 import com.intros.mybatis.plugin.sql.Select;

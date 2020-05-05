@@ -5,7 +5,7 @@ package com.intros.mybatis.plugin.sql;
  *
  * @param <S>
  */
-public class SQL<S extends SQL<S>> {
+public class Sql<S extends Sql<S>> {
     private StringBuilder buffer = new StringBuilder(128);
 
     private static boolean isEmpty(String str) {
@@ -51,6 +51,12 @@ public class SQL<S extends SQL<S>> {
 
     public S append(Object part) {
         buffer.append(part);
+        return (S) this;
+    }
+
+    public S copy(S sql) {
+        this.buffer.setLength(0);
+        this.buffer.append(sql);
         return (S) this;
     }
 

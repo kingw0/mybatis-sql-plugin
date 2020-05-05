@@ -1,7 +1,7 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
-import com.intros.mybatis.plugin.sql.SQLPart;
+import com.intros.mybatis.plugin.sql.Sql;
+import com.intros.mybatis.plugin.sql.SqlPart;
 import com.intros.mybatis.plugin.sql.condition.Between;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.In;
@@ -15,7 +15,7 @@ import static com.intros.mybatis.plugin.sql.expression.Literal.text;
  *
  * @author teddy
  */
-public abstract class Expression<S extends SQL<S>> extends SQLPart<S> {
+public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
     /**
      * @param expr
      * @return

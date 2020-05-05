@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_BRACKET;
 import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
@@ -9,7 +9,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
  * @param <S>
  * @author teddy
  */
-public class BracketExpr<S extends SQL<S>> extends Expression<S> {
+public class BracketExpr<S extends Sql<S>> extends Expression<S> {
     private static final Class<BracketExpr> THIS_CLASS = BracketExpr.class;
 
     static {
@@ -22,7 +22,7 @@ public class BracketExpr<S extends SQL<S>> extends Expression<S> {
         this.expression = expression;
     }
 
-    public static <S extends SQL<S>> BracketExpr<S> priority(Expression<S> expression) {
+    public static <S extends Sql<S>> BracketExpr<S> priority(Expression<S> expression) {
         return instance(THIS_CLASS, expression);
     }
 

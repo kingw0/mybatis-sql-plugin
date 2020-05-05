@@ -7,7 +7,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
-public class Update extends SQL<Update> {
+public class Update extends Sql<Update> {
 
     private boolean first = true;
 

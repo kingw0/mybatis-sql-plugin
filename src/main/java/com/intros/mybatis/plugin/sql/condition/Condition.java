@@ -1,14 +1,14 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
-import com.intros.mybatis.plugin.sql.SQLPart;
+import com.intros.mybatis.plugin.sql.Sql;
+import com.intros.mybatis.plugin.sql.SqlPart;
 
 /**
  * Sql condition
  *
  * @author teddy
  */
-public abstract class Condition<S extends SQL<S>> extends SQLPart<S> {
+public abstract class Condition<S extends Sql<S>> extends SqlPart<S> {
     /**
      * @param cond
      * @return

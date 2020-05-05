@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BindType;
 
 import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
@@ -9,7 +9,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 /**
  * @param <S>
  */
-public class Binder<S extends SQL<S>> extends Expression<S> {
+public class Binder<S extends Sql<S>> extends Expression<S> {
     private static final Class<Binder> THIS_CLASS = Binder.class;
 
     static {
@@ -25,11 +25,11 @@ public class Binder<S extends SQL<S>> extends Expression<S> {
         this.bindType = bindType;
     }
 
-    public static <S extends SQL<S>> Binder<S> bind(String param) {
+    public static <S extends Sql<S>> Binder<S> bind(String param) {
         return instance(THIS_CLASS, param, BIND);
     }
 
-    public static <S extends SQL<S>> Binder<S> bind(String param, BindType bindType) {
+    public static <S extends Sql<S>> Binder<S> bind(String param, BindType bindType) {
         return instance(THIS_CLASS, param, bindType);
     }
 

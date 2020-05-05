@@ -1,28 +1,38 @@
 package com.intros.mybatis.plugin;
 
+import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author teddy
  */
 public class MappingInfo {
+    /**
+     * mapping class
+     */
+    private Class<?> clazz;
+
+    /**
+     * table name
+     */
     private String table;
 
-    private List<Class<?>> classes;
+    /**
+     * column infos
+     */
+    private List<ColumnInfo> columnInfos;
 
-    private Map<Class<?>, List<Pair>> columnInfos;
+    public Class<?> clazz() {
+        return clazz;
+    }
+
+    public MappingInfo clazz(Class<?> clazz) {
+        this.clazz = clazz;
+        return this;
+    }
 
     public String table() {
         return table;
-    }
-
-    public List<Class<?>> classes() {
-        return classes;
-    }
-
-    public Map<Class<?>, List<Pair>> columnInfos() {
-        return columnInfos;
     }
 
     public MappingInfo table(String table) {
@@ -30,36 +40,59 @@ public class MappingInfo {
         return this;
     }
 
-    public MappingInfo classes(List<Class<?>> classes) {
-        this.classes = classes;
-        return this;
+    public List<ColumnInfo> columnInfos() {
+        return columnInfos;
     }
 
-    public MappingInfo columnInfos(Map<Class<?>, List<Pair>> columnInfos) {
+    public MappingInfo columnInfos(List<ColumnInfo> columnInfos) {
         this.columnInfos = columnInfos;
         return this;
     }
 
-    public static class Pair<L, R> {
-        private L left;
+    /**
+     * Column info of the class's field
+     */
+    public static class ColumnInfo {
+        /**
+         * column mapping field
+         */
+        private Field field;
 
-        private R right;
+        /**
+         * column name
+         */
+        private String column;
 
-        public Pair(L left, R right) {
-            this.left = left;
-            this.right = right;
+        /**
+         * column alias
+         */
+        private String alias;
+
+        public Field field() {
+            return field;
         }
 
-        public static <L, R> Pair<L, R> of(L left, R right) {
-            return new Pair<>(left, right);
+        public ColumnInfo field(Field field) {
+            this.field = field;
+            return this;
         }
 
-        public L left() {
-            return left;
+        public String column() {
+            return column;
         }
 
-        public R right() {
-            return right;
+        public ColumnInfo column(String column) {
+            this.column = column;
+            return this;
+        }
+
+        public String alias() {
+            return alias;
+        }
+
+        public ColumnInfo alias(String alias) {
+            this.alias = alias;
+            return this;
         }
     }
 }

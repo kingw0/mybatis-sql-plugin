@@ -1,7 +1,7 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
-import com.intros.mybatis.plugin.sql.SQLWriter;
+import com.intros.mybatis.plugin.sql.Sql;
+import com.intros.mybatis.plugin.sql.SqlWriter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  *
  * @author teddy
  */
-public class Case<S extends SQL<S>> extends Expression<S> {
+public class Case<S extends Sql<S>> extends Expression<S> {
     private static final Class<Case> THIS_CLASS = Case.class;
 
     static {
@@ -26,7 +26,7 @@ public class Case<S extends SQL<S>> extends Expression<S> {
         }));
     }
 
-    private List<SQLWriter<S>> exprs = new ArrayList<>(4);
+    private List<SqlWriter<S>> exprs = new ArrayList<>(4);
 
     private List<Expression<S>> values = new ArrayList<>(4);
 
@@ -49,11 +49,11 @@ public class Case<S extends SQL<S>> extends Expression<S> {
         this.expr = expr;
     }
 
-    public static <S extends SQL<S>> Case<S> cas(Expression<S> expr) {
+    public static <S extends Sql<S>> Case<S> cas(Expression<S> expr) {
         return instance(THIS_CLASS, expr);
     }
 
-    public static <S extends SQL<S>> Case<S> cas() {
+    public static <S extends Sql<S>> Case<S> cas() {
         return instance(THIS_CLASS);
     }
 

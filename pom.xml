@@ -13,7 +13,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
-
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -58,8 +57,10 @@
     <build>
         <testResources>
             <testResource>
+                <directory>src/test/resources</directory>
                 <includes>
                     <include>**/*.sql</include>
+                    <include>**/*.properties</include>
                 </includes>
             </testResource>
         </testResources>

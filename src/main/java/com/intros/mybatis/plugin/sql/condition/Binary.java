@@ -1,9 +1,9 @@
 package com.intros.mybatis.plugin.sql.condition;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.LogicalConditionOp;
 
-public class Binary<S extends SQL<S>> extends Condition<S> {
+public class Binary<S extends Sql<S>> extends Condition<S> {
     private static final Class<Binary> THIS_CLASS = Binary.class;
 
     static {
@@ -22,11 +22,11 @@ public class Binary<S extends SQL<S>> extends Condition<S> {
         this.right = right;
     }
 
-    public static <S extends SQL<S>> Binary<S> and(Condition<S> left, Condition right) {
+    public static <S extends Sql<S>> Binary<S> and(Condition<S> left, Condition right) {
         return instance(THIS_CLASS, left, LogicalConditionOp.AND, right);
     }
 
-    public static <S extends SQL<S>> Binary<S> or(Condition<S> left, Condition right) {
+    public static <S extends Sql<S>> Binary<S> or(Condition<S> left, Condition right) {
         return instance(THIS_CLASS, left, LogicalConditionOp.OR, right);
     }
 

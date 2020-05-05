@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.sql.SQL;
+import com.intros.mybatis.plugin.sql.Sql;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.SINGLE_QUOTES;
 
@@ -9,7 +9,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.SINGLE_QUOTES;
  *
  * @author teddy
  */
-public class Literal<S extends SQL<S>> extends Expression<S> {
+public class Literal<S extends Sql<S>> extends Expression<S> {
     private static final Class<Literal> THIS_CLASS = Literal.class;
 
     static {
