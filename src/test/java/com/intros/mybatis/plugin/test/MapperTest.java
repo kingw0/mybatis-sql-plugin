@@ -47,7 +47,7 @@ public class MapperTest {
     public void testSelect() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryByName("teddy");
-//            System.out.println(res);
+            System.out.println(res);
         }
     }
 

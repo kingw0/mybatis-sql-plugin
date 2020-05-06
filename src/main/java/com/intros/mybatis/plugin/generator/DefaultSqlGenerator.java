@@ -10,8 +10,9 @@ import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.*;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.sql.expression.Binder;
 import com.intros.mybatis.plugin.sql.expression.Column;
+import com.intros.mybatis.plugin.sql.expression.Expression;
+import com.intros.mybatis.plugin.utils.MappingUtils;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.builder.annotation.ProviderContext;
@@ -21,11 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
@@ -282,11 +281,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String buildSelect(ProviderContext context) {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
-        List<Column<Select>> columns = new ArrayList<>(this.mappingInfo.columnInfos().size());
-
-        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
-            columns.add(column(columnInfo.column()).as(columnInfo.alias()));
-        }
+        List<Column<Select>> columns = MappingUtils.columns(this.mappingClass, null, null);
 
         Select select = new Select().columns(columns).from(this.mappingInfo.table());
 
@@ -380,10 +375,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Update update = new Update(this.mappingInfo.table());
 
-        this.mappingInfo.columnInfos().stream()
-                .filter(columnInfo -> !columnInfo.keyProperty() && columnInfo.update())
-                .forEach(columnInfo -> update.set(columnInfo.column(), bind(columnInfo.alias())));
-
+        MappingUtils.consume(mappingClass, columnInfo -> !columnInfo.keyProperty() && columnInfo.update(),
+                columnInfo -> update.set(columnInfo.column(), bind(columnInfo.alias())));
+        
         Condition<Update> condition = condition();
 
         if (condition != null) {
@@ -413,13 +407,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Insert insert = new Insert(this.mappingInfo.table());
 
-        List<String> columns = mappingInfo.columnInfos().stream().filter(ColumnInfo::insert)
-                .map(ColumnInfo::column).collect(Collectors.toList());
+        List<String> columns = MappingUtils.columns(mappingClass, ColumnInfo::insert);
 
         insert.columns(columns);
 
-        List<Binder<Insert>> expressions = mappingInfo.columnInfos().stream().filter(ColumnInfo::insert)
-                .map(columnInfo -> Binder.<Insert>bind(columnInfo.alias())).collect(Collectors.toList());
+        List<? extends Expression<Insert>> expressions = MappingUtils.values(mappingClass, ColumnInfo::insert);
 
         insert.values(expressions);
 
