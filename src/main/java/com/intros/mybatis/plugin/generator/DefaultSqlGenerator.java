@@ -53,6 +53,10 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private Class<?> mappingClass;
     private MappingInfo mappingInfo;
     private SqlType sqlType;
+    private String selectSql;
+    private String updateSql;
+    private String deleteSql;
+    private String insertSql;
 
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
         this.sqlType = sqlType;
@@ -64,8 +68,22 @@ public class DefaultSqlGenerator implements SqlGenerator {
         if (providerMethod == null || methodHandle == null) {
             // no provider
             analyzeMappingClass(context.getMapperMethod(), sqlType);
-
             this.mappingInfo = registry.mappingInfo(this.mappingClass);
+
+            switch (sqlType) {
+                case INSERT:
+                    this.insertSql = buildInsert(context);
+                    break;
+                case SELECT:
+                    this.selectSql = buildSelect(context);
+                    break;
+                case DELETE:
+                    this.deleteSql = buildDelete(context);
+                    break;
+                case UPDATE:
+                    this.updateSql = buildUpdate(context);
+                    break;
+            }
         }
     }
 
@@ -261,8 +279,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return result == null ? null : result.toString();
     }
 
-    private String select(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
+    private String buildSelect(ProviderContext context) {
+        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
         List<Column<Select>> columns = new ArrayList<>(this.mappingInfo.columnInfos().size());
 
@@ -280,9 +298,13 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         String sql = select.toString();
 
-        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
+        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql, context.getMapperMethod(), context.getMapperType());
 
         return sql;
+    }
+
+    private String select(ProviderContext context, Object paramObject) {
+        return this.selectSql;
     }
 
     private <S extends Sql<S>> Condition<S> condition() {
@@ -330,9 +352,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return condition;
     }
 
-
-    private String delete(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
+    private String buildDelete(ProviderContext context) {
+        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
         Delete delete = new Delete(this.mappingInfo.table());
 
@@ -344,20 +365,18 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         String sql = delete.toString();
 
-        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
+        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
 
         return sql;
     }
 
-    /**
-     * TODO nullable judge
-     *
-     * @param context
-     * @param paramObject
-     * @return
-     */
-    private String update(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
+
+    private String delete(ProviderContext context, Object paramObject) {
+        return this.deleteSql;
+    }
+
+    private String buildUpdate(ProviderContext context) {
+        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
         Update update = new Update(this.mappingInfo.table());
 
@@ -375,7 +394,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         String sql = update.toString();
 
-        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
+        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
 
         return sql;
     }
@@ -387,8 +406,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param paramObject
      * @return
      */
-    private String insert(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
+    private String update(ProviderContext context, Object paramObject) {
+        return this.updateSql;
+    }
+
+    private String buildInsert(ProviderContext context) {
+        LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
         Insert insert = new Insert(this.mappingInfo.table());
 
@@ -404,8 +427,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         String sql = insert.toString();
 
-        LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
+        LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
 
         return sql;
+    }
+
+    /**
+     * TODO nullable judge
+     *
+     * @param context
+     * @param paramObject
+     * @return
+     */
+    private String insert(ProviderContext context, Object paramObject) {
+        return this.insertSql;
     }
 }

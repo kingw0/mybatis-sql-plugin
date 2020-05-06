@@ -6,6 +6,7 @@ import com.intros.mybatis.plugin.annotation.Criteria;
 import com.intros.mybatis.plugin.annotation.Mapping;
 import com.intros.mybatis.plugin.annotation.Table;
 import com.intros.mybatis.plugin.sql.Select;
+import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.InsertProvider;
 import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.annotations.UpdateProvider;
@@ -17,7 +18,6 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 public interface TestMapper {
     @SelectProvider(type = ResolvedSqlProvider.class)
-    @Mapping(Test.class)
 //    List<Map<String, String>> queryByName(@Criteria(column = "name_") String name);
     List<Test> queryByName(@Criteria(column = "name_") String name);
 
@@ -29,6 +29,10 @@ public interface TestMapper {
 
     @UpdateProvider(type = ResolvedSqlProvider.class)
     void update(Test test);
+
+    @DeleteProvider(type = ResolvedSqlProvider.class)
+    @Mapping(Test.class)
+    void delete(@Criteria(column = "id_") long id);
 
     interface Provider {
         default Select testSelect(String name) {

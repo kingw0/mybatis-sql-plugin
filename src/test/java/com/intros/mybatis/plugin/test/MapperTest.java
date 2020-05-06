@@ -9,6 +9,11 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.Before;
 import org.junit.Test;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -16,9 +21,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+@State(Scope.Benchmark)
 public class MapperTest {
+
     private SqlSessionFactory sqlSessionFactory;
 
+    @Setup
     @Before
     public void setup() throws SQLException {
         JdbcDataSource ds = new JdbcDataSource();
@@ -35,11 +43,11 @@ public class MapperTest {
     }
 
     @Test
+    @Benchmark
     public void testSelect() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryByName("teddy");
-
-            System.out.println(res);
+//            System.out.println(res);
         }
     }
 
@@ -67,6 +75,38 @@ public class MapperTest {
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
             System.out.println(res);
         }
+    }
+
+    @Test
+    @Benchmark
+    public void testDelete() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            long begin = System.currentTimeMillis();
+
+            session.getMapper(TestMapper.class).delete(1L);
+
+            List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
+
+//            System.out.println(System.currentTimeMillis() - begin);
+
+//            System.out.println(res);
+        }
+    }
+
+    @Test
+    public void runBenchmark() throws RunnerException {
+        Options opt = new OptionsBuilder()
+                // 导入要测试的类
+                .include(MapperTest.class.getSimpleName())
+                // 预热
+                .warmupIterations(1)
+                // 度量1轮
+                .measurementIterations(1)
+                .mode(Mode.Throughput)
+                .forks(1)
+                .build();
+
+        new Runner(opt).run();
     }
 
     private void initDatabase(DataSource ds, String... scripts) throws SQLException {
