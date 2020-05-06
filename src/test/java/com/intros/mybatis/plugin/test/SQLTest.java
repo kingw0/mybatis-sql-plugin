@@ -1,6 +1,5 @@
 package com.intros.mybatis.plugin.test;
 
-import com.intros.mybatis.plugin.MappingInfoRegistry;
 import com.intros.mybatis.plugin.annotation.Column;
 import com.intros.mybatis.plugin.annotation.Table;
 import com.intros.mybatis.plugin.sql.Delete;
@@ -24,16 +23,6 @@ import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
-    @Test
-    public void testSelectFromClass() {
-    }
-
-    @Test
-    public void testInsertFromClass() {
-        System.out.println(MappingInfoRegistry.getInstance().insert(Child.class));
-        System.out.println(MappingInfoRegistry.getInstance().insert(Parent.class));
-    }
-
     @Test
     public void testSelect() {
         Select select = new Select().columns("id_", "name_", "age_").columns(column("grade_").as("g"),

@@ -68,6 +68,10 @@ public class MapperTest {
     public void testUpdate() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             TestMapper.Test test = new TestMapper.Test();
+            test.id(2L).name("sirui");
+
+            session.getMapper(TestMapper.class).insert(test);
+
             test.id(1L).name("andy");
 
             session.getMapper(TestMapper.class).update(test);

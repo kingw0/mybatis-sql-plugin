@@ -1,9 +1,7 @@
-package com.intros.mybatis.plugin;
+package com.intros.mybatis.plugin.mapping;
 
 import com.intros.mybatis.plugin.annotation.Column;
 import com.intros.mybatis.plugin.annotation.Table;
-import com.intros.mybatis.plugin.sql.Insert;
-import com.intros.mybatis.plugin.sql.expression.Binder;
 import com.intros.mybatis.plugin.utils.StringUtils;
 
 import java.lang.reflect.Field;
@@ -11,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * Mapping info registry
@@ -105,8 +102,8 @@ public class MappingInfoRegistry {
      * @param mappingClass
      * @return
      */
-    private List<MappingInfo.ColumnInfo> mappingColumns(Class<?> mappingClass) {
-        List<MappingInfo.ColumnInfo> columnInfos = new ArrayList<>();
+    private List<ColumnInfo> mappingColumns(Class<?> mappingClass) {
+        List<ColumnInfo> columnInfos = new ArrayList<>();
 
         for (Field field : mappingClass.getDeclaredFields()) {
             if (!field.isAnnotationPresent(COLUMN_CLASS)) {
@@ -115,29 +112,11 @@ public class MappingInfoRegistry {
 
             Column column = field.getAnnotation(COLUMN_CLASS);
 
-            columnInfos.add(new MappingInfo.ColumnInfo().field(field).column(column.name())
+            columnInfos.add(new ColumnInfo().field(field).column(column.name())
+                    .keyProperty(column.keyProperty()).insert(column.insert()).update(column.update())
                     .alias(StringUtils.isBlank(column.alias()) ? field.getName() : column.alias()));
         }
 
         return columnInfos;
-    }
-
-    public Insert insert(Class<?> mappingClass) {
-        MappingInfo mappingInfo = mappingInfo(mappingClass);
-
-        Insert insert = new Insert(mappingInfo.table());
-
-        List<String> columns = mappingInfo.columnInfos().stream()
-                .map(MappingInfo.ColumnInfo::column).collect(Collectors.toList());
-
-        insert.columns(columns);
-
-        List<Binder<Insert>> expressions = mappingInfo.columnInfos().stream()
-                .map(columnInfo -> Binder.<Insert>bind(columnInfo.alias())).collect(Collectors.toList());
-
-        insert.values(expressions);
-
-
-        return insert;
     }
 }

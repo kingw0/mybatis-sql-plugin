@@ -1,6 +1,6 @@
 package com.intros.mybatis.plugin.sql;
 
-import com.intros.mybatis.plugin.MappingInfoRegistry;
+import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.condition.Condition;
 import com.intros.mybatis.plugin.sql.constants.Join;
 import com.intros.mybatis.plugin.sql.expression.Expression;

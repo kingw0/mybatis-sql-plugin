@@ -42,7 +42,7 @@ public interface TestMapper {
 
     @Table(name = "t_test")
     class Test {
-        @Column(name = "id_", updateKey = true)
+        @Column(name = "id_", keyProperty = true)
         private long id;
 
         @Column(name = "name_")

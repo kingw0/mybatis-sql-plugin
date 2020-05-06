@@ -1,12 +1,12 @@
 package com.intros.mybatis.plugin.generator;
 
-import com.intros.mybatis.plugin.MappingInfo;
-import com.intros.mybatis.plugin.MappingInfo.ColumnInfo;
-import com.intros.mybatis.plugin.MappingInfoRegistry;
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.annotation.Criteria;
 import com.intros.mybatis.plugin.annotation.Mapping;
 import com.intros.mybatis.plugin.annotation.Provider;
+import com.intros.mybatis.plugin.mapping.ColumnInfo;
+import com.intros.mybatis.plugin.mapping.MappingInfo;
+import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.*;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
@@ -312,7 +312,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         if (sqlType == SqlType.UPDATE) {
             for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
-                if (columnInfo.updateKey()) {
+                if (columnInfo.keyProperty()) {
                     if (condition == null) {
                         condition = Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.alias()));
                     } else {
@@ -380,11 +380,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Update update = new Update(this.mappingInfo.table());
 
-        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
-            if (!columnInfo.updateKey()) {
-                update.set(columnInfo.column(), bind(columnInfo.alias()));
-            }
-        }
+        this.mappingInfo.columnInfos().stream()
+                .filter(columnInfo -> !columnInfo.keyProperty() && columnInfo.update())
+                .forEach(columnInfo -> update.set(columnInfo.column(), bind(columnInfo.alias())));
 
         Condition<Update> condition = condition();
 
@@ -415,12 +413,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Insert insert = new Insert(this.mappingInfo.table());
 
-        List<String> columns = mappingInfo.columnInfos().stream()
+        List<String> columns = mappingInfo.columnInfos().stream().filter(ColumnInfo::insert)
                 .map(ColumnInfo::column).collect(Collectors.toList());
 
         insert.columns(columns);
 
-        List<Binder<Insert>> expressions = mappingInfo.columnInfos().stream()
+        List<Binder<Insert>> expressions = mappingInfo.columnInfos().stream().filter(ColumnInfo::insert)
                 .map(columnInfo -> Binder.<Insert>bind(columnInfo.alias())).collect(Collectors.toList());
 
         insert.values(expressions);
