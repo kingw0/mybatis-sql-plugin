@@ -15,7 +15,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 
 public class MapperTest {
     private SqlSessionFactory sqlSessionFactory;
@@ -36,9 +35,36 @@ public class MapperTest {
     }
 
     @Test
-    public void test1() {
+    public void testSelect() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            List<Map<String, String>> res = session.getMapper(TestMapper.class).testSelect("teddy");
+            List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryByName("teddy");
+
+            System.out.println(res);
+        }
+    }
+
+    @Test
+    public void testInsert() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            TestMapper.Test test = new TestMapper.Test();
+            test.id(2L).name("andy");
+
+            session.getMapper(TestMapper.class).insert(test);
+
+            List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
+            System.out.println(res);
+        }
+    }
+
+    @Test
+    public void testUpdate() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            TestMapper.Test test = new TestMapper.Test();
+            test.id(1L).name("andy");
+
+            session.getMapper(TestMapper.class).update(test);
+
+            List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
             System.out.println(res);
         }
     }

@@ -23,7 +23,7 @@ public class Comparison<S extends Sql<S>> extends Condition<S> {
         this.op = op;
     }
 
-    public static <S extends Sql<S>> Comparison eq(Expression<S> left, Expression<S> right) {
+    public static <S extends Sql<S>> Comparison eq(Expression left, Expression<S> right) {
         return instance(THIS_CLASS, left, right, BinaryConditionOp.EQ);
     }
 

@@ -68,6 +68,11 @@ public class MappingInfo {
          */
         private String alias;
 
+        /**
+         *
+         */
+        private boolean updateKey;
+
         public Field field() {
             return field;
         }
@@ -92,6 +97,15 @@ public class MappingInfo {
 
         public ColumnInfo alias(String alias) {
             this.alias = alias;
+            return this;
+        }
+
+        public boolean updateKey() {
+            return updateKey;
+        }
+
+        public ColumnInfo updateKey(boolean updateKey) {
+            this.updateKey = updateKey;
             return this;
         }
     }

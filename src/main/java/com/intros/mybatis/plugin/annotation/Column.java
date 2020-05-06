@@ -8,5 +8,7 @@ import java.lang.annotation.*;
 public @interface Column {
     String name();
 
+    boolean updateKey() default false;
+
     String alias() default "";
 }

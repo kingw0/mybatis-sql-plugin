@@ -36,7 +36,7 @@ public class ReflectionUtils {
      */
     public static List<Class<?>> getActualType(ParameterizedType parameterizedType) {
         Type[] types = parameterizedType.getActualTypeArguments();
-        return Arrays.stream(types).map(type -> (Class<?>) type).collect(Collectors.toList());
+        return Arrays.stream(types).map(type -> type instanceof ParameterizedType ? (Class<?>) ((ParameterizedType) type).getRawType() : (Class<?>) type).collect(Collectors.toList());
     }
 
     /**

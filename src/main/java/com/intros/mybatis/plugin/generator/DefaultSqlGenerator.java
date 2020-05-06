@@ -1,27 +1,33 @@
 package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.MappingInfo;
+import com.intros.mybatis.plugin.MappingInfo.ColumnInfo;
 import com.intros.mybatis.plugin.MappingInfoRegistry;
 import com.intros.mybatis.plugin.SqlType;
+import com.intros.mybatis.plugin.annotation.Criteria;
 import com.intros.mybatis.plugin.annotation.Mapping;
 import com.intros.mybatis.plugin.annotation.Provider;
-import com.intros.mybatis.plugin.sql.Select;
-import com.intros.mybatis.plugin.sql.Table;
-import com.intros.mybatis.plugin.sql.constants.Join;
-import com.intros.mybatis.plugin.sql.expression.Expression;
+import com.intros.mybatis.plugin.sql.*;
+import com.intros.mybatis.plugin.sql.condition.Comparison;
+import com.intros.mybatis.plugin.sql.condition.Condition;
+import com.intros.mybatis.plugin.sql.expression.Binder;
+import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.builder.annotation.ProviderContext;
-import org.apache.ibatis.jdbc.SQL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static com.intros.mybatis.plugin.sql.Table.table;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 /**
@@ -37,7 +43,6 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
  */
 public class DefaultSqlGenerator implements SqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-    private static final char TABLE_ALIAS_BEGIN = 'a';
     private static MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
     private boolean hasParamAnnotation;
     private Parameter[] mapperMethodParams;
@@ -46,17 +51,21 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private Method providerMethod;
     private MethodHandle methodHandle;
     private Class<?> mappingClass;
-    private LinkedList<Class<?>> mappingClasses = new LinkedList<>();
-    private LinkedList<MappingInfo> mappingInfos = new LinkedList<>();
+    private MappingInfo mappingInfo;
+    private SqlType sqlType;
 
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
+        this.sqlType = sqlType;
+
         analyzeParameters(context.getMapperMethod());
 
         analyzeProvider(context);
 
         if (providerMethod == null || methodHandle == null) {
             // no provider
-            analyzeMapping(context.getMapperMethod(), sqlType);
+            analyzeMappingClass(context.getMapperMethod(), sqlType);
+
+            this.mappingInfo = registry.mappingInfo(this.mappingClass);
         }
     }
 
@@ -192,7 +201,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param mapperMethod
      * @param sqlType
      */
-    private void analyzeMapping(Method mapperMethod, SqlType sqlType) {
+    private void analyzeMappingClass(Method mapperMethod, SqlType sqlType) {
         if (sqlType == SqlType.SELECT) {
             // select statement, get root class from the return type of mapper method
             Type returnType = mapperMethod.getGenericReturnType();
@@ -255,37 +264,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String select(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
 
-        List<Expression<Select>> expressions = new ArrayList<>(8);
+        List<Column<Select>> columns = new ArrayList<>(this.mappingInfo.columnInfos().size());
 
-        List<Table> tables = new ArrayList<>();
-
-        char alias = TABLE_ALIAS_BEGIN;
-
-        for (MappingInfo mappingInfo : this.mappingInfos) {
-            tables.add(table(mappingInfo.table()).as(String.valueOf(alias)));
-
-            for (MappingInfo.ColumnInfo columnInfo : mappingInfo.columnInfos()) {
-                expressions.add(column(columnInfo.column()).as(String.valueOf(columnInfo.alias())));
-            }
-
-            alias++;
+        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
+            columns.add(column(columnInfo.column()).as(columnInfo.alias()));
         }
 
-        Select select = new Select();
+        Select select = new Select().columns(columns).from(this.mappingInfo.table());
 
-        for (Expression expression : expressions) {
-            select.columns(expression);
+        Condition<Select> condition = condition();
+
+        if (condition != null) {
+            select.where(condition);
         }
-
-        select.from(tables.get(0));
-
-        for (int i = 1; i < tables.size(); i++) {
-            select.join(tables.get(i), Join.INNER);
-        }
-
-//        if (mapperMethodParams.length > 0) {
-//            select.where();
-//        }
 
         String sql = select.toString();
 
@@ -294,19 +285,64 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return sql;
     }
 
+    private <S extends Sql<S>> Condition<S> condition() {
+        Condition<S> condition = null;
+
+        if (sqlType == SqlType.UPDATE) {
+            for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
+                if (columnInfo.updateKey()) {
+                    if (condition == null) {
+                        condition = Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.alias()));
+                    } else {
+                        condition.and(Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.alias())));
+                    }
+                }
+            }
+        } else {
+            if (this.mapperMethodParams.length > 0) {
+                condition = singleCondition(this.mapperMethodParams[0], this.paramNames[0]);
+
+                if (this.mapperMethodParams.length > 1) {
+                    for (int i = 1, len = this.mapperMethodParams.length; i < len; i++) {
+                        condition.and(singleCondition(this.mapperMethodParams[i], this.paramNames[i]));
+                    }
+                }
+            }
+        }
+
+        return condition;
+    }
+
+    private <S extends Sql<S>> Condition<S> singleCondition(Parameter parameter, String paramName) {
+        Condition<S> condition;
+
+        if (parameter.isAnnotationPresent(Criteria.class)) {
+            Criteria criteria = parameter.getAnnotation(Criteria.class);
+
+            switch (criteria.type()) {
+                default:
+                    condition = Comparison.<S>eq(column(criteria.column()), bind(paramName));
+            }
+        } else {
+            condition = Comparison.<S>eq(column(paramName), bind(paramName));
+        }
+
+        return condition;
+    }
+
+
     private String delete(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
 
-        String sql = new SQL() {
-            {
-//                DELETE_FROM(table);
+        Delete delete = new Delete(this.mappingInfo.table());
 
-                // TODO optimize: default param name is list for List,and array for Array parameter
-//                for (Parameter parameter : mapperMethodParams) {
-//                    WHERE(predicateMap.get(parameter).render(context, paramObject instanceof Map ? parseArgs((Map) paramObject, parameter) : paramObject));
-//                }
-            }
-        }.toString();
+        Condition<Delete> condition = condition();
+
+        if (condition != null) {
+            delete.where(condition);
+        }
+
+        String sql = delete.toString();
 
         LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
 
@@ -323,24 +359,21 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String update(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate update sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
 
-        String sql = new SQL() {
-            {
-//                UPDATE(table);
+        Update update = new Update(this.mappingInfo.table());
 
-                StringBuilder builder = new StringBuilder();
-
-//                for (Map.Entry<String, String> entry : columnsMap.entrySet()) {
-//                    builder.append(entry.getValue()).append(KW_EQU_WITH_SPACE).append(PARAM_NAME_PREFIX).append(entry.getKey()).append(PARAM_NAME_SUFFIX);
-//                    SET(builder.toString());
-//                    builder.setLength(0);
-//                }
-//
-//                // TODO optimize: default param name is list for List,and array for Array parameter
-//                for (Parameter parameter : mapperMethodParams) {
-//                    WHERE(predicateMap.get(parameter).render(context, paramObject instanceof Map ? parseArgs((Map) paramObject, parameter) : paramObject));
-//                }
+        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
+            if (!columnInfo.updateKey()) {
+                update.set(columnInfo.column(), bind(columnInfo.alias()));
             }
-        }.toString();
+        }
+
+        Condition<Update> condition = condition();
+
+        if (condition != null) {
+            update.where(condition);
+        }
+
+        String sql = update.toString();
 
         LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
 
@@ -357,19 +390,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String insert(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}], params is [{}].", context.getMapperMethod(), context.getMapperType(), paramObject);
 
-        String sql = new SQL() {
-            {
-//                INSERT_INTO(table);
+        Insert insert = new Insert(this.mappingInfo.table());
 
-                StringBuilder builder = new StringBuilder();
+        List<String> columns = mappingInfo.columnInfos().stream()
+                .map(ColumnInfo::column).collect(Collectors.toList());
 
-//                for (Map.Entry<String, String> entry : columnsMap.entrySet()) {
-//                    builder.append(PARAM_NAME_PREFIX).append(entry.getKey()).append(PARAM_NAME_SUFFIX);
-//                    INTO_COLUMNS(entry.getValue()).INTO_VALUES(builder.toString());
-//                    builder.setLength(0);
-//                }
-            }
-        }.toString();
+        insert.columns(columns);
+
+        List<Binder<Insert>> expressions = mappingInfo.columnInfos().stream()
+                .map(columnInfo -> Binder.<Insert>bind(columnInfo.alias())).collect(Collectors.toList());
+
+        insert.values(expressions);
+
+        String sql = insert.toString();
 
         LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}], params is [{}].!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
 
