@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 
 @State(Scope.Benchmark)
@@ -69,6 +70,22 @@ public class MapperTest {
             Assert.assertEquals("teddy", res.get(0).name());
             Assert.assertEquals(2, res.get(1).id());
             Assert.assertEquals("andy", res.get(1).name());
+        }
+    }
+
+    @Test
+    public void testBatchInsert() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            List<TestMapper.Test> tests = Arrays.asList(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
+
+            session.getMapper(TestMapper.class).batchInsert(tests);
+
+            List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
+
+            System.out.println(res);
+
+            Assert.assertEquals(3, res.size());
+
         }
     }
 

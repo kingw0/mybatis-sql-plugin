@@ -22,6 +22,14 @@ public interface TestMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id_")
     void insert(Test test);
 
+    @InsertProvider(type = ResolvedSqlProvider.class)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id_")
+    void batchInsert(List<Test> tests);
+
+    @InsertProvider(type = ResolvedSqlProvider.class)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id_")
+    void insertAll(Test... tests);
+
     @SelectProvider(type = ResolvedSqlProvider.class)
     List<Test> queryAll();
 

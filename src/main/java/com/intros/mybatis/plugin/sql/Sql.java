@@ -54,10 +54,8 @@ public class Sql<S extends Sql<S>> {
         return (S) this;
     }
 
-    public S copy(S sql) {
-        this.buffer.setLength(0);
-        this.buffer.append(sql);
-        return (S) this;
+    public S foreach(SqlPart<S> part){
+
     }
 
     @Override

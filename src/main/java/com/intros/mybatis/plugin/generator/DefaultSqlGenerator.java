@@ -228,7 +228,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param sqlType
      */
     private void analyzeMappingClass(Method mapperMethod, SqlType sqlType) {
-        if (sqlType == SqlType.SELECT) {
+        if (mapperMethod.isAnnotationPresent(Mapping.class)) {
+            mappingClass = mapperMethod.getAnnotation(Mapping.class).value();
+        } else if (sqlType == SqlType.SELECT) {
             // select statement, get root class from the return type of mapper method
             Type returnType = mapperMethod.getGenericReturnType();
 
@@ -242,13 +244,21 @@ public class DefaultSqlGenerator implements SqlGenerator {
             }
         } else if (sqlType == SqlType.INSERT || sqlType == SqlType.UPDATE) {
             if (mapperMethodParams.length == 1) {
-                mappingClass = mapperMethodParams[0].getType();
+                Type type = mapperMethodParams[0].getParameterizedType();
+
+                if (type instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethodParams[0].getType())) {
+                    mappingClass = ReflectionUtils.getActualType((ParameterizedType) type).get(0);
+                } else if (type instanceof Class) {
+                    if (((Class) type).isArray()) {
+                        mappingClass = ((Class) type).getComponentType();
+                    } else {
+                        mappingClass = (Class<?>) type;
+                    }
+                }
             }
         }
 
-        if (mapperMethod.isAnnotationPresent(Mapping.class)) {
-            mappingClass = mapperMethod.getAnnotation(Mapping.class).value();
-        }
+
     }
 
     /**
@@ -410,6 +420,10 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return this.updateSql;
     }
 
+    /**
+     * @param context
+     * @return
+     */
     private String buildInsert(ProviderContext context) {
         LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
