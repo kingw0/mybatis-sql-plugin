@@ -6,10 +6,7 @@ import com.intros.mybatis.plugin.annotation.Criteria;
 import com.intros.mybatis.plugin.annotation.Mapping;
 import com.intros.mybatis.plugin.annotation.Table;
 import com.intros.mybatis.plugin.sql.Select;
-import org.apache.ibatis.annotations.DeleteProvider;
-import org.apache.ibatis.annotations.InsertProvider;
-import org.apache.ibatis.annotations.SelectProvider;
-import org.apache.ibatis.annotations.UpdateProvider;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -22,6 +19,7 @@ public interface TestMapper {
     List<Test> queryByName(@Criteria(column = "name_") String name);
 
     @InsertProvider(type = ResolvedSqlProvider.class)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id_")
     void insert(Test test);
 
     @SelectProvider(type = ResolvedSqlProvider.class)

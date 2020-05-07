@@ -14,6 +14,7 @@ import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 import com.intros.mybatis.plugin.utils.MappingUtils;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ import java.lang.reflect.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
@@ -51,6 +53,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private MethodHandle methodHandle;
     private Class<?> mappingClass;
     private MappingInfo mappingInfo;
+    private Options options;
+    private final Predicate<ColumnInfo> INSERT_PREDICATE = columnInfo -> options == null ? columnInfo.insert() :
+            !options.useGeneratedKeys() || !columnInfo.alias().equals(options.keyProperty());
     private SqlType sqlType;
     private String selectSql;
     private String updateSql;
@@ -59,6 +64,10 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
         this.sqlType = sqlType;
+
+        if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
+            options = context.getMapperMethod().getAnnotation(Options.class);
+        }
 
         analyzeParameters(context.getMapperMethod());
 
@@ -365,7 +374,6 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return sql;
     }
 
-
     private String delete(ProviderContext context, Object paramObject) {
         return this.deleteSql;
     }
@@ -377,7 +385,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         MappingUtils.consume(mappingClass, columnInfo -> !columnInfo.keyProperty() && columnInfo.update(),
                 columnInfo -> update.set(columnInfo.column(), bind(columnInfo.alias())));
-        
+
         Condition<Update> condition = condition();
 
         if (condition != null) {
@@ -407,11 +415,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Insert insert = new Insert(this.mappingInfo.table());
 
-        List<String> columns = MappingUtils.columns(mappingClass, ColumnInfo::insert);
+        List<String> columns = MappingUtils.columnNames(mappingClass, INSERT_PREDICATE);
 
         insert.columns(columns);
 
-        List<? extends Expression<Insert>> expressions = MappingUtils.values(mappingClass, ColumnInfo::insert);
+        List<? extends Expression<Insert>> expressions = MappingUtils.values(mappingClass, INSERT_PREDICATE);
 
         insert.values(expressions);
 

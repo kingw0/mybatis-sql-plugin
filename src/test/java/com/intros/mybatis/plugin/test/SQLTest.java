@@ -15,6 +15,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
 import static com.intros.mybatis.plugin.sql.expression.BracketExpr.priority;
@@ -23,6 +25,11 @@ import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
+    @Test
+    public void test(){
+        System.out.println(TimeUnit.DAYS.toMillis(7));
+    }
+
     @Test
     public void testSelect() {
         Select select = new Select().columns("id_", "name_", "age_").columns(column("grade_").as("g"),

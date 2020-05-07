@@ -22,8 +22,37 @@ public class MappingUtils {
      * @param predicate
      * @return
      */
-    public static List<String> columns(Class<?> mappingClass, Predicate<ColumnInfo> predicate) {
+    public static List<String> columnNames(Class<?> mappingClass, Predicate<ColumnInfo> predicate) {
         return columnInfoMap(mappingClass, ColumnInfo::column, predicate);
+    }
+
+    /**
+     * @param mappingClass
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass) {
+        return columns(mappingClass, null, null);
+    }
+
+    /**
+     * @param mappingClass
+     * @param table
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, final String table) {
+        return columns(mappingClass, table, null);
+    }
+
+    /**
+     * @param mappingClass
+     * @param predicate
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, Predicate<ColumnInfo> predicate) {
+        return columns(mappingClass, null, predicate);
     }
 
     /**

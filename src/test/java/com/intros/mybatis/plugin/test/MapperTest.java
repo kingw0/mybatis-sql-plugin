@@ -7,6 +7,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.*;
@@ -47,7 +48,9 @@ public class MapperTest {
     public void testSelect() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryByName("teddy");
-            System.out.println(res);
+            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals("teddy", res.get(0).name());
         }
     }
 
@@ -55,12 +58,17 @@ public class MapperTest {
     public void testInsert() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             TestMapper.Test test = new TestMapper.Test();
-            test.id(2L).name("andy");
+            test.id(3L).name("andy");
 
             session.getMapper(TestMapper.class).insert(test);
 
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
-            System.out.println(res);
+
+            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals("teddy", res.get(0).name());
+            Assert.assertEquals(2, res.get(1).id());
+            Assert.assertEquals("andy", res.get(1).name());
         }
     }
 
@@ -68,7 +76,7 @@ public class MapperTest {
     public void testUpdate() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             TestMapper.Test test = new TestMapper.Test();
-            test.id(2L).name("sirui");
+            test.id(2L).name("fred");
 
             session.getMapper(TestMapper.class).insert(test);
 
@@ -77,7 +85,11 @@ public class MapperTest {
             session.getMapper(TestMapper.class).update(test);
 
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
-            System.out.println(res);
+            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals("andy", res.get(0).name());
+            Assert.assertEquals(2, res.get(1).id());
+            Assert.assertEquals("fred", res.get(1).name());
         }
     }
 
@@ -85,15 +97,16 @@ public class MapperTest {
     @Benchmark
     public void testDelete() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            long begin = System.currentTimeMillis();
+            TestMapper.Test test = new TestMapper.Test();
+            test.id(2L).name("fred");
+
+            session.getMapper(TestMapper.class).insert(test);
 
             session.getMapper(TestMapper.class).delete(1L);
 
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
 
-//            System.out.println(System.currentTimeMillis() - begin);
-
-//            System.out.println(res);
+            Assert.assertEquals(1, res.size());
         }
     }
 
