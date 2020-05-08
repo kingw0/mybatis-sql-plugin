@@ -6,6 +6,8 @@ import com.intros.mybatis.plugin.sql.condition.Between;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.In;
 
+import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_BRACKET;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
@@ -16,6 +18,22 @@ import static com.intros.mybatis.plugin.sql.expression.Literal.text;
  * @author teddy
  */
 public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
+    /**
+     * Expression surround by bracket
+     *
+     * @param expression
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Expression<S> bracket(final Expression<S> expression) {
+        return new Expression<S>() {
+            @Override
+            public S write(S sql) {
+                return expression.write(sql.append(OPEN_BRACKET)).append(CLOSE_BRACKET);
+            }
+        };
+    }
+
     /**
      * @param expr
      * @return

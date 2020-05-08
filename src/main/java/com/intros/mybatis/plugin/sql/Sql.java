@@ -54,9 +54,9 @@ public class Sql<S extends Sql<S>> {
         return (S) this;
     }
 
-    public S foreach(SqlPart<S> part){
-
-    }
+//    public S foreach(String itemSqlPart<S> part){
+//
+//    }
 
     @Override
     public String toString() {

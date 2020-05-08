@@ -6,7 +6,7 @@ import com.intros.mybatis.plugin.sql.Delete;
 import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.Update;
-import com.intros.mybatis.plugin.sql.condition.BracketCond;
+import com.intros.mybatis.plugin.sql.condition.Condition;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
@@ -19,21 +19,21 @@ import java.util.concurrent.TimeUnit;
 
 import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
-import static com.intros.mybatis.plugin.sql.expression.BracketExpr.priority;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
+import static com.intros.mybatis.plugin.sql.expression.Expression.bracket;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
     @Test
-    public void test(){
+    public void test() {
         System.out.println(TimeUnit.DAYS.toMillis(7));
     }
 
     @Test
     public void testSelect() {
         Select select = new Select().columns("id_", "name_", "age_").columns(column("grade_").as("g"),
-                priority(column("age_").add(10).add(20)).mul(20)
+                bracket(column("age_").add(10).add(20)).mul(20)
         ).from(table("t_test").as("a"))
                 .where(column("id_").eq(10)
                         .and(column("name_").like("%teddy%"))
@@ -47,7 +47,7 @@ public class SQLTest {
 
     @Test
     public void testDelete() {
-        Delete delete = new Delete("t_test").where(BracketCond.priority(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
+        Delete delete = new Delete("t_test").where(Condition.bracket(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
 
         System.out.println(delete);
     }
@@ -70,7 +70,7 @@ public class SQLTest {
     public void selectBenchmark() {
         Select select = new Select().columns("id_", "name_", "age_").columns(
                 column("grade_").as("g"),
-                priority(column("age_").add(10).add(20)).mul(20)
+                bracket(column("age_").add(10).add(20)).mul(20)
         ).from(table("t_test").as("a"))
                 .where(column("id_").eq(10)
                                 .and(column("name_").like("%teddy%"))
@@ -81,8 +81,10 @@ public class SQLTest {
     }
 
     @Benchmark
+    @Test
     public void deleteBenchmark() {
-        Delete delete = new Delete("t_test").where(BracketCond.priority(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
+        Delete delete = new Delete("t_test").where(Condition.bracket(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
+        System.out.println(delete);
     }
 
     @Test
