@@ -53,11 +53,31 @@ public class Keywords {
 
     public static final String KW_DESC = " DESC";
 
+    public static final String KW_FOREACH_OPEN = "<foreach ";
+
+    public static final String KW_FOREACH_CLOSE = "</foreach>";
+
+    public static final String KW_FOREACH_ITEM_WITH_EQUAL = "item=";
+
+    public static final String KW_FOREACH_INDEX_WITH_EQUAL = "index=";
+
+    public static final String KW_FOREACH_OPEN_WITH_EQUAL = "open=";
+
+    public static final String KW_FOREACH_CLOSE_WITH_EQUAL = "close=";
+
+    public static final String KW_FOREACH_COLLECTION_WITH_EQUAL = "collection=";
+
+    public static final String KW_FOREACH_SEPARATOR_WITH_EQUAL = "separator=";
+
     public static final String SEMICOLON_WITH_SPACE = "; ";
 
     public static final String COMMA_WITH_SPACE = ", ";
 
     public static final String SINGLE_QUOTES = "'";
+
+    public static final String QUOTES = "\"";
+
+    public static final String CLOSE_ANGLE_BRACKET = ">";
 
     public static final String OPEN_BRACKET = "(";
 
@@ -72,6 +92,4 @@ public class Keywords {
     public static final String DOT = ".";
 
     public static final String SPACE = " ";
-
-    public static final String NULL = "NULL";
 }

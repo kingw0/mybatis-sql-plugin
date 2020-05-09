@@ -53,11 +53,7 @@ public class Sql<S extends Sql<S>> {
         buffer.append(part);
         return (S) this;
     }
-
-//    public S foreach(String itemSqlPart<S> part){
-//
-//    }
-
+    
     @Override
     public String toString() {
         return buffer.toString();
