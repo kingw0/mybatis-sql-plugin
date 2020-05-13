@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
+import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 /**

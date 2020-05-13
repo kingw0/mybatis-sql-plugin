@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
+import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 public interface TestMapper {

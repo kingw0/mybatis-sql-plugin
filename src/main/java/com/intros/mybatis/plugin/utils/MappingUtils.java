@@ -3,7 +3,7 @@ package com.intros.mybatis.plugin.utils;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.Sql;
-import com.intros.mybatis.plugin.sql.expression.Binder;
+import com.intros.mybatis.plugin.sql.expression.Bind;
 import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 
@@ -73,7 +73,7 @@ public class MappingUtils {
      * @return
      */
     public static <S extends Sql<S>> List<? extends Expression<S>> values(Class<?> mappingClass, Predicate<ColumnInfo> predicate) {
-        return columnInfoMap(mappingClass, columnInfo -> Binder.bind(columnInfo.alias()), predicate);
+        return columnInfoMap(mappingClass, columnInfo -> Bind.bind(columnInfo.alias()), predicate);
     }
 
     /**
