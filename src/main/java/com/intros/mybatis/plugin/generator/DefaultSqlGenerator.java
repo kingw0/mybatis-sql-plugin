@@ -10,8 +10,8 @@ import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.*;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
+import com.intros.mybatis.plugin.sql.expression.Bind;
 import com.intros.mybatis.plugin.sql.expression.Column;
-import com.intros.mybatis.plugin.sql.expression.Expression;
 import com.intros.mybatis.plugin.utils.MappingUtils;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Options;
@@ -55,7 +55,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private MappingInfo mappingInfo;
     private Options options;
     private final Predicate<ColumnInfo> INSERT_PREDICATE = columnInfo -> options == null ? columnInfo.insert() :
-            !options.useGeneratedKeys() || !columnInfo.alias().equals(options.keyProperty());
+            !options.useGeneratedKeys() || !columnInfo.prop().equals(options.keyProperty());
     private SqlType sqlType;
     private String selectSql;
     private String updateSql;
@@ -328,9 +328,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
             for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
                 if (columnInfo.keyProperty()) {
                     if (condition == null) {
-                        condition = Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.alias()));
+                        condition = Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.prop()));
                     } else {
-                        condition.and(Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.alias())));
+                        condition.and(Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.prop())));
                     }
                 }
             }
@@ -394,7 +394,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
         Update update = new Update(this.mappingInfo.table());
 
         MappingUtils.consume(mappingClass, columnInfo -> !columnInfo.keyProperty() && columnInfo.update(),
-                columnInfo -> update.set(columnInfo.column(), bind(columnInfo.alias())));
+                columnInfo -> update.set(columnInfo.column(), bind(columnInfo.prop())));
 
         Condition<Update> condition = condition();
 
@@ -433,9 +433,9 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         insert.columns(columns);
 
-        List<? extends Expression<Insert>> expressions = MappingUtils.values(mappingClass, INSERT_PREDICATE);
+        Bind<Insert> bind = MappingUtils.bind(mappingClass, INSERT_PREDICATE);
 
-        insert.values(expressions);
+        insert.values(bind);
 
         String sql = insert.toString();
 

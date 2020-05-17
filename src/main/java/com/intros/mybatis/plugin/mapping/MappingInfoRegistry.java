@@ -114,7 +114,7 @@ public class MappingInfoRegistry {
 
             columnInfos.add(new ColumnInfo().field(field).column(column.name())
                     .keyProperty(column.keyProperty()).insert(column.insert()).update(column.update())
-                    .alias(StringUtils.isBlank(column.alias()) ? field.getName() : column.alias()));
+                    .prop(StringUtils.isBlank(column.alias()) ? field.getName() : column.alias()));
         }
 
         return columnInfos;

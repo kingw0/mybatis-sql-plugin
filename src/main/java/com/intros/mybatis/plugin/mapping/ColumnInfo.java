@@ -19,7 +19,7 @@ public class ColumnInfo {
     /**
      * column alias
      */
-    private String alias;
+    private String prop;
 
     /**
      *
@@ -61,12 +61,12 @@ public class ColumnInfo {
         return this;
     }
 
-    public String alias() {
-        return alias;
+    public String prop() {
+        return prop;
     }
 
-    public ColumnInfo alias(String alias) {
-        this.alias = alias;
+    public ColumnInfo prop(String alias) {
+        this.prop = alias;
         return this;
     }
 
