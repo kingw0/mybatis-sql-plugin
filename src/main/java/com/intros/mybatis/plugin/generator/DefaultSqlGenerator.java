@@ -10,8 +10,6 @@ import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.*;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.sql.expression.Bind;
-import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.utils.MappingUtils;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Options;
@@ -24,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -300,9 +297,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String buildSelect(ProviderContext context) {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
-        List<Column<Select>> columns = MappingUtils.columns(this.mappingClass, null, null);
-
-        Select select = new Select().columns(columns).from(this.mappingInfo.table());
+        Select select = new Select().columns(MappingUtils.columns(this.mappingClass, true)).from(this.mappingInfo.table());
 
         Condition<Select> condition = condition();
 
@@ -429,13 +424,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Insert insert = new Insert(this.mappingInfo.table());
 
-        List<String> columns = MappingUtils.columnNames(mappingClass, INSERT_PREDICATE);
-
-        insert.columns(columns);
-
-        Bind<Insert> bind = MappingUtils.bind(mappingClass, INSERT_PREDICATE);
-
-        insert.values(bind);
+        insert.columns(MappingUtils.columns(this.mappingClass, INSERT_PREDICATE)).values(MappingUtils.bind(mappingClass, INSERT_PREDICATE));
 
         String sql = insert.toString();
 

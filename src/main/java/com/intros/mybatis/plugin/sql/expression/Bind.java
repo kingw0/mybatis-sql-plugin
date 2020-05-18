@@ -2,6 +2,7 @@ package com.intros.mybatis.plugin.sql.expression;
 
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BindType;
+import com.intros.mybatis.plugin.utils.StringUtils;
 
 import java.util.Iterator;
 import java.util.List;
@@ -135,11 +136,11 @@ public class Bind<S extends Sql<S>> extends Expression<S> {
     public S write(S sql) {
         boolean bind = this.bindType == BIND;
 
-        String prefix = bind ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2;
+        String prefix = (bind ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + (StringUtils.isNotBlank(param) ? param : "");
 
         if (size > 0) {
             // #{param[0]}, #{param[1]}...
-            String p = prefix + param + OPEN_SQUARE_BRACKET;
+            String p = prefix + OPEN_SQUARE_BRACKET;
 
             sql.append(p).append(0).append(CLOSE_SQUARE_BRACKET).append(KW_PARAM_NAME_SUFFIX);
 
@@ -150,7 +151,7 @@ public class Bind<S extends Sql<S>> extends Expression<S> {
             return sql;
         } else if (props != null && props.size() > 0) {
             // #{param.prop}, #{param.prop}...
-            String p = prefix + param + DOT;
+            String p = prefix + DOT;
 
             Iterator<String> iter = props.iterator();
 
