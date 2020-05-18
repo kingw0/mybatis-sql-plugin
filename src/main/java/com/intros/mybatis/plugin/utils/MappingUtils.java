@@ -6,7 +6,6 @@ import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BindType;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.sql.expression.Bind;
-import com.intros.mybatis.plugin.sql.expression.Column;
 
 import java.util.Iterator;
 import java.util.List;
@@ -24,40 +23,29 @@ public class MappingUtils {
 
     /**
      * @param mappingClass
-     * @param predicate
-     * @return
-     */
-    public static List<String> columnNames(Class<?> mappingClass, Predicate<ColumnInfo> predicate) {
-        return columnInfoMap(mappingClass, ColumnInfo::column, predicate);
-    }
-
-    /**
-     * @param mappingClass
-     * @param table
-     * @param <S>
-     * @return
-     */
-    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, final String table) {
-        return columns(mappingClass, table, null);
-    }
-
-    /**
-     * @param mappingClass
-     * @param table
-     * @param predicate
-     * @param <S>
-     * @return
-     */
-    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, final String table, Predicate<ColumnInfo> predicate) {
-        return columnInfoMap(mappingClass, columnInfo -> Column.column(table, columnInfo.column()).as(columnInfo.prop()), predicate);
-    }
-
-    /**
-     * @param mappingClass
      * @return
      */
     public static String columns(Class<?> mappingClass) {
         return columns(mappingClass, null, null, false);
+    }
+
+    /**
+     * @param mappingClass
+     * @param table
+     * @return
+     */
+    public static String columns(Class<?> mappingClass, String table) {
+        return columns(mappingClass, table, null, false);
+    }
+
+    /**
+     * @param mappingClass
+     * @param table
+     * @param filter
+     * @return
+     */
+    public static String columns(Class<?> mappingClass, String table, Predicate<ColumnInfo> filter) {
+        return columns(mappingClass, table, filter, false);
     }
 
     /**
@@ -217,23 +205,6 @@ public class MappingUtils {
      */
     public static <R> R mapping(Class<?> mappingClass, Function<List<ColumnInfo>, R> mapper) {
         return mapper.apply(registry.mappingInfo(mappingClass).columnInfos());
-    }
-
-    /**
-     * @param mappingClass
-     * @param mapper
-     * @param predicate
-     * @param <R>
-     * @return
-     */
-    public static <R> List<R> columnInfoMap(Class<?> mappingClass, Function<ColumnInfo, R> mapper, Predicate<ColumnInfo> predicate) {
-        Stream<ColumnInfo> stream = registry.mappingInfo(mappingClass).columnInfos().stream();
-
-        if (predicate != null) {
-            stream = stream.filter(predicate);
-        }
-
-        return stream.map(mapper).collect(Collectors.toList());
     }
 
     /**

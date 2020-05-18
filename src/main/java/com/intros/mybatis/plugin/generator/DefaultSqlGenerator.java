@@ -21,10 +21,14 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_SQUARE_BRACKET;
 import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
@@ -41,6 +45,7 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
  */
 public class DefaultSqlGenerator implements SqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
+    private static final int BATCH_INSERT_MAX_COUNT = 128;
     private static MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
     private boolean hasParamAnnotation;
     private Parameter[] mapperMethodParams;
@@ -48,16 +53,23 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
+    // mapping info
     private Class<?> mappingClass;
     private MappingInfo mappingInfo;
     private Options options;
+    // insert sql column info filter
     private final Predicate<ColumnInfo> INSERT_PREDICATE = columnInfo -> options == null ? columnInfo.insert() :
             !options.useGeneratedKeys() || !columnInfo.prop().equals(options.keyProperty());
+    // sql type of this mapper method
     private SqlType sqlType;
+    // cached sql
     private String selectSql;
     private String updateSql;
     private String deleteSql;
     private String insertSql;
+
+    private boolean batch = false;
+    private List<String> insertValues;
 
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
         this.sqlType = sqlType;
@@ -73,6 +85,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
         if (providerMethod == null || methodHandle == null) {
             // no provider
             analyzeMappingClass(context.getMapperMethod(), sqlType);
+
             this.mappingInfo = registry.mappingInfo(this.mappingClass);
 
             switch (sqlType) {
@@ -244,9 +257,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 Type type = mapperMethodParams[0].getParameterizedType();
 
                 if (type instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethodParams[0].getType())) {
+                    batch = true;
                     mappingClass = ReflectionUtils.getActualType((ParameterizedType) type).get(0);
                 } else if (type instanceof Class) {
                     if (((Class) type).isArray()) {
+                        batch = true;
                         mappingClass = ((Class) type).getComponentType();
                     } else {
                         mappingClass = (Class<?>) type;
@@ -424,7 +439,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Insert insert = new Insert(this.mappingInfo.table());
 
-        insert.columns(MappingUtils.columns(this.mappingClass, INSERT_PREDICATE)).values(MappingUtils.bind(mappingClass, INSERT_PREDICATE));
+        insert.columns(MappingUtils.columns(this.mappingClass, INSERT_PREDICATE));
+
+        if (batch) {
+            String paramStart = paramNames[0] + OPEN_SQUARE_BRACKET;
+
+            insertValues = new ArrayList<>(BATCH_INSERT_MAX_COUNT);
+
+            for (int i = 0; i < BATCH_INSERT_MAX_COUNT; i++) {
+                insertValues.add(MappingUtils.bindExpr(mappingClass, INSERT_PREDICATE, paramStart + i + OPEN_SQUARE_BRACKET, BIND));
+            }
+        } else {
+            insert.values(MappingUtils.bind(mappingClass, INSERT_PREDICATE));
+        }
 
         String sql = insert.toString();
 
@@ -441,6 +468,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @return
      */
     private String insert(ProviderContext context, Object paramObject) {
-        return this.insertSql;
+        if (batch) {
+           Class<?> clazz = ((Map)paramObject).get("array").getClass();
+
+            return this.insertSql + Insert.VALUES;
+        } else {
+            return this.insertSql;
+        }
     }
 }

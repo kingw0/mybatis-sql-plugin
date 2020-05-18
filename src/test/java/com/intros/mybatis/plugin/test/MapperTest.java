@@ -78,6 +78,8 @@ public class MapperTest {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             List<TestMapper.Test> tests = Arrays.asList(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
 
+            session.getMapper(TestMapper.class).insertAll(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
+
             session.getMapper(TestMapper.class).batchInsert(tests);
 
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
