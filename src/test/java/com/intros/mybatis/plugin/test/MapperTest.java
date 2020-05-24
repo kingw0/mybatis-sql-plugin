@@ -21,7 +21,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @State(Scope.Benchmark)
 public class MapperTest {
@@ -78,16 +80,13 @@ public class MapperTest {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             List<TestMapper.Test> tests = Arrays.asList(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
 
-            session.getMapper(TestMapper.class).insertAll(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
-
             session.getMapper(TestMapper.class).batchInsert(tests);
+
+            session.getMapper(TestMapper.class).insertAll(new TestMapper.Test().name("lily"), new TestMapper.Test().name("andy"));
 
             List<TestMapper.Test> res = session.getMapper(TestMapper.class).queryAll();
 
-            System.out.println(res);
-
-            Assert.assertEquals(3, res.size());
-
+            Assert.assertEquals(5, res.size());
         }
     }
 

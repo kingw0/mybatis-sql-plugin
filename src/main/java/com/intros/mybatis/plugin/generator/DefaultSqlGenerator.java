@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
-import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_SQUARE_BRACKET;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
@@ -69,6 +69,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private String insertSql;
 
     private boolean batch = false;
+    private String batchType = "collection";
     private List<String> insertValues;
 
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
@@ -189,7 +190,15 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 this.hasParamAnnotation = true;
                 paramNames[index++] = parameter.getAnnotation(Param.class).value();
             } else {
-                paramNames[index++] = parameter.getName();
+                Class<?> type = parameter.getType();
+
+                if (Collection.class.isAssignableFrom(type)) {
+                    paramNames[index++] = "collection";
+                } else if (type.isArray()) {
+                    paramNames[index++] = "array";
+                } else {
+                    paramNames[index++] = parameter.getName();
+                }
             }
         }
     }
@@ -258,10 +267,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
                 if (type instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethodParams[0].getType())) {
                     batch = true;
+                    batchType = "collection";
                     mappingClass = ReflectionUtils.getActualType((ParameterizedType) type).get(0);
                 } else if (type instanceof Class) {
                     if (((Class) type).isArray()) {
                         batch = true;
+                        batchType = "array";
                         mappingClass = ((Class) type).getComponentType();
                     } else {
                         mappingClass = (Class<?>) type;
@@ -447,7 +458,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
             insertValues = new ArrayList<>(BATCH_INSERT_MAX_COUNT);
 
             for (int i = 0; i < BATCH_INSERT_MAX_COUNT; i++) {
-                insertValues.add(MappingUtils.bindExpr(mappingClass, INSERT_PREDICATE, paramStart + i + OPEN_SQUARE_BRACKET, BIND));
+                insertValues.add(MappingUtils.bindExpr(mappingClass, INSERT_PREDICATE, paramStart + i + CLOSE_SQUARE_BRACKET, BIND));
             }
         } else {
             insert.values(MappingUtils.bind(mappingClass, INSERT_PREDICATE));
@@ -469,9 +480,28 @@ public class DefaultSqlGenerator implements SqlGenerator {
      */
     private String insert(ProviderContext context, Object paramObject) {
         if (batch) {
-           Class<?> clazz = ((Map)paramObject).get("array").getClass();
+            Object param = ((Map) paramObject).get(paramNames[0]);
 
-            return this.insertSql + Insert.VALUES;
+            int size = 0;
+
+            switch (batchType) {
+                case "collection":
+                    size = ((Collection) param).size();
+                    break;
+                case "array":
+                    size = ((Object[]) param).length;
+                    break;
+            }
+
+            StringBuilder builder = new StringBuilder(this.insertSql).append(Insert.VALUES);
+
+            builder.append(OPEN_BRACKET).append(insertValues.get(0)).append(CLOSE_BRACKET);
+
+            for (int i = 1; i < size; i++) {
+                builder.append(COMMA_WITH_SPACE).append(OPEN_BRACKET).append(insertValues.get(i)).append(CLOSE_BRACKET);
+            }
+
+            return builder.toString();
         } else {
             return this.insertSql;
         }
