@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @State(Scope.Benchmark)
@@ -227,5 +228,25 @@ public class MapperTest {
 
     private String path(String file) {
         return this.getClass().getClassLoader().getResource(file).getPath();
+    }
+
+    /**
+     * 1 bit(sign,always zero) + 14 bits(instance id) + 41 bits(timestamp) + 8 bits(counter)
+     */
+    public static class IdGenerator {
+        /**
+         * 2020.06.01 00:00:00
+         */
+        private static final long BEGIN = 1590940800217L;
+        /**
+         * 41 bits, 69 years from 2020.06.01 00:00:00
+         */
+        private static final long TIMESTAMP_MASK = (1L << 42) - 1;
+
+        private static AtomicInteger counter = new AtomicInteger(0);
+
+        public static long id(long instanceId) {
+            return 0L + (instanceId << 49) + (((System.currentTimeMillis() - BEGIN) & TIMESTAMP_MASK) << 8) + (counter.getAndAdd(1) & 0xff);
+        }
     }
 }
