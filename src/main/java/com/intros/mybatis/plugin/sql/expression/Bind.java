@@ -134,9 +134,9 @@ public class Bind<S extends Sql<S>> extends Expression<S> {
 
     @Override
     public S write(S sql) {
-        boolean bind = this.bindType == BIND;
+        boolean bind = this.bindType == BIND, isParamBlank = StringUtils.isBlank(param);
 
-        String prefix = (bind ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + (StringUtils.isNotBlank(param) ? param : "");
+        String prefix = (bind ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + (!isParamBlank ? param : "");
 
         if (size > 0) {
             // #{param[0]}, #{param[1]}...
@@ -156,16 +156,16 @@ public class Bind<S extends Sql<S>> extends Expression<S> {
             Iterator<String> iter = props.iterator();
 
             if (iter.hasNext()) {
-                sql.append(p).append(iter.next()).append(KW_PARAM_NAME_SUFFIX);
+                sql.append(isParamBlank ? prefix : p).append(iter.next()).append(KW_PARAM_NAME_SUFFIX);
 
                 while (iter.hasNext()) {
-                    sql.append(COMMA_WITH_SPACE).append(p).append(iter.next()).append(KW_PARAM_NAME_SUFFIX);
+                    sql.append(COMMA_WITH_SPACE).append(isParamBlank ? prefix : p).append(iter.next()).append(KW_PARAM_NAME_SUFFIX);
                 }
             }
 
             return sql;
         }
 
-        return sql.append(prefix).append(this.param).append(KW_PARAM_NAME_SUFFIX);
+        return sql.append(prefix).append(KW_PARAM_NAME_SUFFIX);
     }
 }

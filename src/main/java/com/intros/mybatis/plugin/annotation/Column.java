@@ -7,9 +7,7 @@ import java.lang.annotation.*;
 @Repeatable(Columns.class)
 public @interface Column {
     String name();
-
-    boolean keyProperty() default false;
-
+    
     boolean insert() default true;
 
     boolean update() default true;

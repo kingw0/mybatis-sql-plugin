@@ -53,7 +53,11 @@ public class Sql<S extends Sql<S>> {
         buffer.append(part);
         return (S) this;
     }
-    
+
+    public S append(SqlPart<S> part) {
+        return part.write((S) this);
+    }
+
     @Override
     public String toString() {
         return buffer.toString();

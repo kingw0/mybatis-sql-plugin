@@ -7,10 +7,10 @@ import com.intros.mybatis.plugin.annotation.Provider;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
-import com.intros.mybatis.plugin.sql.*;
+import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.utils.MappingUtils;
+import com.intros.mybatis.plugin.sql.expression.Bind;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
@@ -21,14 +21,10 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
-import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
-import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
@@ -45,36 +41,29 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
  */
 public class DefaultSqlGenerator implements SqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-    private static final int BATCH_INSERT_MAX_COUNT = 128;
+
     private static MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
-    private boolean hasParamAnnotation;
-    private Parameter[] mapperMethodParams;
-    private String[] paramNames;
+
+    protected Options options;
+    // mapping info
+    protected Class<?> mappingClass;
+    protected MappingInfo mappingInfo;
+    protected boolean multiQuery = false;
+    protected boolean hasParamAnnotation;
+    protected Parameter[] mapperMethodParams;
+    protected String[] paramNames;
+    protected boolean hasProvider = true;
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
-    // mapping info
-    private Class<?> mappingClass;
-    private MappingInfo mappingInfo;
-    private Options options;
-    // insert sql column info filter
-    private final Predicate<ColumnInfo> INSERT_PREDICATE = columnInfo -> options == null ? columnInfo.insert() :
-            !options.useGeneratedKeys() || !columnInfo.prop().equals(options.keyProperty());
-    // sql type of this mapper method
-    private SqlType sqlType;
-    // cached sql
-    private String selectSql;
-    private String updateSql;
-    private String deleteSql;
-    private String insertSql;
 
-    private boolean batch = false;
-    private String batchType = "collection";
-    private List<String> insertValues;
-
+    /**
+     * Constructor for generator
+     *
+     * @param context
+     * @param sqlType
+     */
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
-        this.sqlType = sqlType;
-
         if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
             options = context.getMapperMethod().getAnnotation(Options.class);
         }
@@ -84,25 +73,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
         analyzeProvider(context);
 
         if (providerMethod == null || methodHandle == null) {
+            hasProvider = false;
+
             // no provider
             analyzeMappingClass(context.getMapperMethod(), sqlType);
 
             this.mappingInfo = registry.mappingInfo(this.mappingClass);
-
-            switch (sqlType) {
-                case INSERT:
-                    this.insertSql = buildInsert(context);
-                    break;
-                case SELECT:
-                    this.selectSql = buildSelect(context);
-                    break;
-                case DELETE:
-                    this.deleteSql = buildDelete(context);
-                    break;
-                case UPDATE:
-                    this.updateSql = buildUpdate(context);
-                    break;
-            }
         }
     }
 
@@ -120,21 +96,106 @@ public class DefaultSqlGenerator implements SqlGenerator {
         if (providerMethod != null && methodHandle != null) {
             // if we can find the default provider method, use the default method to generate sql
             return getSqlFromProvider(paramObject);
-        } else {
-            // generate sql through root class
-            switch (sqlType) {
-                case SELECT:
-                    return select(context, paramObject);
-                case DELETE:
-                    return delete(context, paramObject);
-                case UPDATE:
-                    return update(context, paramObject);
-                case INSERT:
-                    return insert(context, paramObject);
-            }
+        } else if (mappingClass != null) {
+            // generate sql through mapping class
+            return sql(context, paramObject);
         }
 
         throw new IllegalStateException("Oops,we could not generate sql from provider or by default strategy(from root class).");
+    }
+
+    /**
+     * override by sub class
+     *
+     * @param context
+     * @param paramObject
+     * @return
+     */
+    protected String sql(ProviderContext context, Object paramObject) {
+        return null;
+    }
+
+    /**
+     * @param paramObject
+     * @param paramName
+     * @return
+     */
+    protected Object extractParam(Object paramObject, String paramName) {
+        if (this.mapperMethodParams.length == 0) {
+            return null;
+        } else if (paramObject instanceof Map) {
+            return ((Map) paramObject).get(paramName);
+        } else if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
+            // if has param annotation,mybatis will put the param in a map
+            return paramObject;
+        }
+
+        return null;
+    }
+
+    /**
+     * get param size if param is collection or array
+     *
+     * @param paramObj
+     * @param paramType
+     * @return
+     */
+    protected int paramSize(Object paramObj, Class<?> paramType) {
+        int size = -1;
+
+        if (Collection.class.isAssignableFrom(paramType)) {
+            size = ((Collection) paramObj).size();
+        } else if (paramType.isArray()) {
+            size = ((Object[]) paramObj).length;
+        }
+
+        return size;
+    }
+
+    /**
+     * Get condition from the mapping class's key property
+     *
+     * @param paramName
+     * @param <S>
+     * @return
+     */
+    protected <S extends Sql<S>> Condition<S> mappingCondition(String paramName) {
+        Condition<S> condition = null;
+
+        // construct condition from mapping class
+        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
+            if (options != null && columnInfo.prop().equals(options.keyProperty())) {
+                Condition<S> cond = Comparison.<S>eq(column(columnInfo.column()), bind(paramName, Arrays.asList(columnInfo.prop())));
+                condition = condition == null ? cond : condition.and(cond);
+            }
+        }
+
+        return condition;
+    }
+
+    protected <S extends Sql<S>> Condition<S> prepareCondition(Object paramObject) {
+        Condition<S> condition = null;
+
+        for (int i = 0, len = this.paramNames.length; i < len; i++) {
+            Parameter parameter = this.mapperMethodParams[i];
+
+            if (parameter.isAnnotationPresent(Criteria.class)) {
+                Criteria criteria = parameter.getAnnotation(Criteria.class);
+                Condition<S> cond = condition(criteria.type(), criteria.column(), paramNames[i], extractParam(paramObject, paramNames[i]));
+                condition = condition == null ? cond : condition.and(cond);
+            }
+        }
+
+        return condition;
+    }
+
+    private <S extends Sql<S>> Condition<S> condition(String type, String column, String paramName, Object paramValue) {
+        switch (type) {
+            case "in":
+                return column(column).in(Bind.bind(paramName, paramSize(paramValue, paramValue.getClass())));
+            default:
+                return Comparison.<S>eq(column(column), bind(paramName));
+        }
     }
 
     /**
@@ -190,15 +251,18 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 this.hasParamAnnotation = true;
                 paramNames[index++] = parameter.getAnnotation(Param.class).value();
             } else {
-                Class<?> type = parameter.getType();
+                paramNames[index++] = parameter.getName();
+            }
+        }
 
-                if (Collection.class.isAssignableFrom(type)) {
-                    paramNames[index++] = "collection";
-                } else if (type.isArray()) {
-                    paramNames[index++] = "array";
-                } else {
-                    paramNames[index++] = parameter.getName();
-                }
+        if (index == 1) {
+            // parameter length is one
+            Class<?> type = this.mapperMethodParams[0].getType();
+
+            if (Collection.class.isAssignableFrom(type)) {
+                paramNames[0] = "collection";
+            } else if (type.isArray()) {
+                paramNames[0] = "array";
             }
         }
     }
@@ -266,13 +330,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 Type type = mapperMethodParams[0].getParameterizedType();
 
                 if (type instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethodParams[0].getType())) {
-                    batch = true;
-                    batchType = "collection";
+                    multiQuery = true;
                     mappingClass = ReflectionUtils.getActualType((ParameterizedType) type).get(0);
                 } else if (type instanceof Class) {
                     if (((Class) type).isArray()) {
-                        batch = true;
-                        batchType = "array";
+                        multiQuery = true;
                         mappingClass = ((Class) type).getComponentType();
                     } else {
                         mappingClass = (Class<?>) type;
@@ -280,8 +342,6 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 }
             }
         }
-
-
     }
 
     /**
@@ -320,190 +380,23 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return result == null ? null : result.toString();
     }
 
-    private String buildSelect(ProviderContext context) {
-        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
-
-        Select select = new Select().columns(MappingUtils.columns(this.mappingClass, true)).from(this.mappingInfo.table());
-
-        Condition<Select> condition = condition();
-
-        if (condition != null) {
-            select.where(condition);
-        }
-
-        String sql = select.toString();
-
-        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql, context.getMapperMethod(), context.getMapperType());
-
-        return sql;
-    }
-
-    private String select(ProviderContext context, Object paramObject) {
-        return this.selectSql;
-    }
-
-    private <S extends Sql<S>> Condition<S> condition() {
-        Condition<S> condition = null;
-
-        if (sqlType == SqlType.UPDATE) {
-            for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
-                if (columnInfo.keyProperty()) {
-                    if (condition == null) {
-                        condition = Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.prop()));
-                    } else {
-                        condition.and(Comparison.<S>eq(column(columnInfo.column()), bind(columnInfo.prop())));
-                    }
-                }
-            }
-        } else {
-            if (this.mapperMethodParams.length > 0) {
-                condition = singleCondition(this.mapperMethodParams[0], this.paramNames[0]);
-
-                if (this.mapperMethodParams.length > 1) {
-                    for (int i = 1, len = this.mapperMethodParams.length; i < len; i++) {
-                        condition.and(singleCondition(this.mapperMethodParams[i], this.paramNames[i]));
-                    }
-                }
-            }
-        }
-
-        return condition;
-    }
-
-    private <S extends Sql<S>> Condition<S> singleCondition(Parameter parameter, String paramName) {
+    /**
+     * @param criteria
+     * @param paramName
+     * @param <S>
+     * @return
+     */
+    private <S extends Sql<S>> Condition<S> condition(Criteria criteria, String paramName, int size) {
         Condition<S> condition;
 
-        if (parameter.isAnnotationPresent(Criteria.class)) {
-            Criteria criteria = parameter.getAnnotation(Criteria.class);
-
-            switch (criteria.type()) {
-                default:
-                    condition = Comparison.<S>eq(column(criteria.column()), bind(paramName));
-            }
-        } else {
-            condition = Comparison.<S>eq(column(paramName), bind(paramName));
+        switch (criteria.type()) {
+            case "in":
+                condition = column(criteria.column()).in(Bind.bind(paramName, size));
+                break;
+            default:
+                condition = Comparison.<S>eq(column(criteria.column()), bind(paramName));
         }
 
         return condition;
-    }
-
-    private String buildDelete(ProviderContext context) {
-        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
-
-        Delete delete = new Delete(this.mappingInfo.table());
-
-        Condition<Delete> condition = condition();
-
-        if (condition != null) {
-            delete.where(condition);
-        }
-
-        String sql = delete.toString();
-
-        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
-
-        return sql;
-    }
-
-    private String delete(ProviderContext context, Object paramObject) {
-        return this.deleteSql;
-    }
-
-    private String buildUpdate(ProviderContext context) {
-        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
-
-        Update update = new Update(this.mappingInfo.table());
-
-        MappingUtils.consume(mappingClass, columnInfo -> !columnInfo.keyProperty() && columnInfo.update(),
-                columnInfo -> update.set(columnInfo.column(), bind(columnInfo.prop())));
-
-        Condition<Update> condition = condition();
-
-        if (condition != null) {
-            update.where(condition);
-        }
-
-        String sql = update.toString();
-
-        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
-
-        return sql;
-    }
-
-    /**
-     * TODO nullable judge
-     *
-     * @param context
-     * @param paramObject
-     * @return
-     */
-    private String update(ProviderContext context, Object paramObject) {
-        return this.updateSql;
-    }
-
-    /**
-     * @param context
-     * @return
-     */
-    private String buildInsert(ProviderContext context) {
-        LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
-
-        Insert insert = new Insert(this.mappingInfo.table());
-
-        insert.columns(MappingUtils.columns(this.mappingClass, INSERT_PREDICATE));
-
-        if (batch) {
-            String paramStart = paramNames[0] + OPEN_SQUARE_BRACKET;
-
-            insertValues = new ArrayList<>(BATCH_INSERT_MAX_COUNT);
-
-            for (int i = 0; i < BATCH_INSERT_MAX_COUNT; i++) {
-                insertValues.add(MappingUtils.bindExpr(mappingClass, INSERT_PREDICATE, paramStart + i + CLOSE_SQUARE_BRACKET, BIND));
-            }
-        } else {
-            insert.values(MappingUtils.bind(mappingClass, INSERT_PREDICATE));
-        }
-
-        String sql = insert.toString();
-
-        LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
-
-        return sql;
-    }
-
-    /**
-     * TODO nullable judge
-     *
-     * @param context
-     * @param paramObject
-     * @return
-     */
-    private String insert(ProviderContext context, Object paramObject) {
-        if (batch) {
-            Object param = ((Map) paramObject).get(paramNames[0]);
-
-            int size = 0;
-
-            switch (batchType) {
-                case "collection":
-                    size = ((Collection) param).size();
-                    break;
-                case "array":
-                    size = ((Object[]) param).length;
-                    break;
-            }
-
-            StringBuilder builder = new StringBuilder(this.insertSql).append(Insert.VALUES);
-
-            builder.append(OPEN_BRACKET).append(insertValues.get(0)).append(CLOSE_BRACKET);
-
-            for (int i = 1; i < size; i++) {
-                builder.append(COMMA_WITH_SPACE).append(OPEN_BRACKET).append(insertValues.get(i)).append(CLOSE_BRACKET);
-            }
-
-            return builder.toString();
-        } else {
-            return this.insertSql;
-        }
     }
 }

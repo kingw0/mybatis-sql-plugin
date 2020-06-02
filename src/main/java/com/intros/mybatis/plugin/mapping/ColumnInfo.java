@@ -24,11 +24,6 @@ public class ColumnInfo {
     /**
      *
      */
-    private boolean keyProperty;
-
-    /**
-     *
-     */
     private boolean insert;
 
     /**
@@ -65,17 +60,8 @@ public class ColumnInfo {
         return prop;
     }
 
-    public ColumnInfo prop(String alias) {
-        this.prop = alias;
-        return this;
-    }
-
-    public boolean keyProperty() {
-        return keyProperty;
-    }
-
-    public ColumnInfo keyProperty(boolean keyProperty) {
-        this.keyProperty = keyProperty;
+    public ColumnInfo prop(String prop) {
+        this.prop = prop;
         return this;
     }
 

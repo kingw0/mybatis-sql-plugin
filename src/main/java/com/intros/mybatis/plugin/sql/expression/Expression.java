@@ -5,9 +5,9 @@ import com.intros.mybatis.plugin.sql.SqlPart;
 import com.intros.mybatis.plugin.sql.condition.Between;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.In;
-import com.intros.mybatis.plugin.utils.StringUtils;
 
-import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_BRACKET;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
@@ -32,40 +32,6 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
                 return expression.write(sql.append(OPEN_BRACKET)).append(CLOSE_BRACKET);
             }
         };
-    }
-
-    /**
-     * @param item
-     * @param index
-     * @param collection
-     * @param separator
-     * @param open
-     * @param close
-     * @param part
-     * @return
-     */
-    public static <S extends Sql<S>> Expression<S> foreach(String item, String index, String collection, String separator, String open, String close, SqlPart<S> part) {
-        return new Expression<S>() {
-            @Override
-            public S write(S sql) {
-                sql.append(KW_FOREACH_OPEN);
-
-                foreachProp(sql, KW_FOREACH_ITEM_WITH_EQUAL, item);
-                foreachProp(sql, KW_FOREACH_INDEX_WITH_EQUAL, index);
-                foreachProp(sql, KW_FOREACH_COLLECTION_WITH_EQUAL, collection);
-                foreachProp(sql, KW_FOREACH_SEPARATOR_WITH_EQUAL, separator);
-                foreachProp(sql, KW_FOREACH_OPEN_WITH_EQUAL, open);
-                foreachProp(sql, KW_FOREACH_CLOSE_WITH_EQUAL, close);
-
-                return part.write(sql.append(CLOSE_ANGLE_BRACKET)).append(KW_FOREACH_CLOSE);
-            }
-        };
-    }
-
-    private static <S extends Sql<S>> void foreachProp(S sql, String propKey, String propValue) {
-        if (StringUtils.isNotBlank(propValue)) {
-            sql.append(propKey).append(QUOTES).append(propValue).append(QUOTES);
-        }
     }
 
     /**

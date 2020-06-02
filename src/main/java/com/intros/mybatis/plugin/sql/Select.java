@@ -143,7 +143,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select where(Condition<Select> condition) {
-        return condition.write(this.append(KW_WHERE));
+        return condition == null ? this : condition.write(this.append(KW_WHERE));
     }
 
     /**

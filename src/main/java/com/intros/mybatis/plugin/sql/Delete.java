@@ -14,6 +14,6 @@ public class Delete extends Sql<Delete> {
     }
 
     public Delete where(Condition<Delete> condition) {
-        return condition.write(this.append(KW_WHERE));
+        return condition == null ? this : condition.write(this.append(KW_WHERE));
     }
 }

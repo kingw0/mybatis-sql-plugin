@@ -24,6 +24,7 @@ import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
 import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Expression.bracket;
+import static com.intros.mybatis.plugin.sql.expression.ExpressionList.list;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
@@ -82,7 +83,7 @@ public class SQLTest {
 
     @Test
     public void testInsert() {
-        Insert insert = new Insert("t_test").columns("id_", "name_").values(number(10), text("teddy"));
+        Insert insert = new Insert("t_test").columns("id_", "name_").values(list(number(10), text("teddy")));
 
         System.out.println(insert);
     }

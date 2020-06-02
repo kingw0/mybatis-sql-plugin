@@ -1,1 +1,1 @@
-insert into t_test values (1, 'teddy');
+insert into t_domain values (1, 'teddy');

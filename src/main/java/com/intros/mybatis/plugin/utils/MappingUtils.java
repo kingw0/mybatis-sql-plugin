@@ -4,10 +4,9 @@ import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BindType;
-import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.sql.expression.Bind;
+import com.intros.mybatis.plugin.sql.expression.Column;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -16,104 +15,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
-import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 
 public class MappingUtils {
     private static final MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
 
-    /**
-     * @param mappingClass
-     * @return
-     */
-    public static String columns(Class<?> mappingClass) {
-        return columns(mappingClass, null, null, false);
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, boolean alias) {
+        return columns(mappingClass, alias, null);
     }
 
-    /**
-     * @param mappingClass
-     * @param table
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, String table) {
-        return columns(mappingClass, table, null, false);
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, boolean alias, Predicate<ColumnInfo> filter) {
+        return columns(mappingClass, null, alias, filter);
     }
 
-    /**
-     * @param mappingClass
-     * @param table
-     * @param filter
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, String table, Predicate<ColumnInfo> filter) {
-        return columns(mappingClass, table, filter, false);
-    }
-
-    /**
-     * @param mappingClass
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, boolean props) {
-        return columns(mappingClass, null, null, props);
-    }
-
-
-    /**
-     * @param mappingClass
-     * @param filter
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, Predicate<ColumnInfo> filter) {
-        return columns(mappingClass, null, filter, false);
-    }
-
-    /**
-     * @param mappingClass
-     * @param filter
-     * @param props
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, Predicate<ColumnInfo> filter, boolean props) {
-        return columns(mappingClass, null, filter, props);
-    }
-
-    /**
-     * @param mappingClass
-     * @param table
-     * @param filter
-     * @param props
-     * @return
-     */
-    public static String columns(Class<?> mappingClass, final String table, Predicate<ColumnInfo> filter, boolean props) {
-        boolean hasTable = StringUtils.isNotBlank(table);
-
-        String prefix = hasTable ? table + DOT : "";
-
-        StringBuilder buffer = new StringBuilder();
-
-        consume(mappingClass, filter, new Consumer<ColumnInfo>() {
-            private boolean first = true;
-
-            @Override
-            public void accept(ColumnInfo columnInfo) {
-                if (first) {
-                    first = false;
-                } else {
-                    buffer.append(COMMA_WITH_SPACE);
-                }
-
-                if (hasTable) {
-                    buffer.append(prefix).append(columnInfo.column());
-                } else {
-                    buffer.append(columnInfo.column());
-                }
-
-                if (props) {
-                    buffer.append(SPACE).append(columnInfo.prop());
-                }
-            }
-        });
-
-        return buffer.toString();
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, String table, boolean alias, Predicate<ColumnInfo> filter) {
+        return list(mappingClass, columnInfo -> {
+            Column<S> column = StringUtils.isNotBlank(table) ? Column.column(table, columnInfo.column()) : Column.column(columnInfo.column());
+            return alias ? column.as(columnInfo.prop()) : column;
+        }, filter);
     }
 
     /**
@@ -149,33 +67,6 @@ public class MappingUtils {
      */
     public static <S extends Sql<S>> Bind<S> bind(Class<?> mappingClass, Predicate<ColumnInfo> filter, String param, BindType bindType) {
         return Bind.bind(param, list(mappingClass, columnInfo -> columnInfo.prop(), filter), bindType);
-    }
-
-
-    /**
-     * convert column infos to bind expression string
-     *
-     * @param mappingClass
-     * @param filter
-     * @param param
-     * @return
-     */
-    public static String bindExpr(Class<?> mappingClass, Predicate<ColumnInfo> filter, String param, BindType bindType) {
-        String prefix = StringUtils.isNotBlank(param) ? (bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + param + Keywords.DOT : KW_PARAM_NAME_PREFIX;
-
-        StringBuilder buffer = new StringBuilder();
-
-        Iterator<String> iter = list(mappingClass, columnInfo -> prefix + columnInfo.prop() + KW_PARAM_NAME_SUFFIX, filter).iterator();
-
-        if (iter.hasNext()) {
-            buffer.append(iter.next());
-
-            while (iter.hasNext()) {
-                buffer.append(COMMA_WITH_SPACE).append(iter.next());
-            }
-        }
-
-        return buffer.toString();
     }
 
     /**
