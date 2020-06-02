@@ -7,6 +7,7 @@ import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.Update;
 import com.intros.mybatis.plugin.sql.condition.Condition;
+import org.junit.Assert;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
@@ -15,12 +16,15 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
+import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Expression.bracket;
+import static com.intros.mybatis.plugin.sql.expression.ExpressionList.list;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
@@ -28,6 +32,24 @@ public class SQLTest {
     @Test
     public void test() {
         System.out.println(TimeUnit.DAYS.toMillis(7));
+    }
+
+    @Test
+    public void testBind() {
+        Select select = new Select().columns("a", "b", "c").from("test").where(column("a").eq(bind("p")));
+        Assert.assertEquals("SELECT a, b, c FROM test WHERE a = #{p}", select.toString());
+    }
+
+    @Test
+    public void testBindCollection() {
+        Select select = new Select().columns("a", "b", "c").from("test").where(column("a").in(bind("p", 2)));
+        Assert.assertEquals("SELECT a, b, c FROM test WHERE a IN (#{p[0]}, #{p[1]})", select.toString());
+    }
+
+    @Test
+    public void testBindProps() {
+        Insert insert = new Insert("test").columns("a", "b", "c").values(bind("p", Arrays.asList("a", "b", "c")));
+        Assert.assertEquals("INSERT INTO test (a, b, c) VALUES (#{p.a}, #{p.b}, #{p.c})", insert.toString());
     }
 
     @Test
@@ -61,7 +83,7 @@ public class SQLTest {
 
     @Test
     public void testInsert() {
-        Insert insert = new Insert("t_test").columns("id_", "name_").values(number(10), text("teddy"));
+        Insert insert = new Insert("t_test").columns("id_", "name_").values(list(number(10), text("teddy")));
 
         System.out.println(insert);
     }

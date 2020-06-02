@@ -138,6 +138,18 @@ public class Joiner {
         return sql.append(close);
     }
 
+    public static <S extends Sql<S>> String join(List<S> sqls, String seperator) {
+        StringBuilder buffer = new StringBuilder(256 * sqls.size());
+
+        buffer.append(sqls.get(0));
+
+        for (int i = 1, size = sqls.size(); i < size; i++) {
+            buffer.append(seperator).append(sqls.get(i));
+        }
+
+        return buffer.toString();
+    }
+
     /**
      * @param args
      */

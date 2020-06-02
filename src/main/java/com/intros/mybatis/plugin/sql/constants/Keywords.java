@@ -87,6 +87,10 @@ public class Keywords {
 
     public static final String CLOSE_BRACKET_WITH_SPACE = ") ";
 
+    public static final String OPEN_SQUARE_BRACKET = "[";
+
+    public static final String CLOSE_SQUARE_BRACKET = "]";
+
     public static final String KW_EQU_WITH_SPACE = " = ";
 
     public static final String DOT = ".";

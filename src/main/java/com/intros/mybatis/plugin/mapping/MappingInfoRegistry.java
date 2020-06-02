@@ -60,17 +60,6 @@ public class MappingInfoRegistry {
     }
 
     /**
-     * judge if a clazz is a custom class
-     *
-     * @param clazz
-     * @return
-     */
-    private boolean custom(Class<?> clazz) {
-        // jdk inner class's class loader is null
-        return clazz.getClassLoader() != null && !clazz.isInterface();
-    }
-
-    /**
      * get mapping info of a class
      *
      * @param mappingClass
@@ -82,6 +71,17 @@ public class MappingInfoRegistry {
         }
 
         return mappingInfos.get(mappingClass);
+    }
+
+    /**
+     * judge if a clazz is a custom class
+     *
+     * @param clazz
+     * @return
+     */
+    private boolean custom(Class<?> clazz) {
+        // jdk inner class's class loader is null
+        return clazz.getClassLoader() != null && !clazz.isInterface();
     }
 
     /**
@@ -112,9 +112,8 @@ public class MappingInfoRegistry {
 
             Column column = field.getAnnotation(COLUMN_CLASS);
 
-            columnInfos.add(new ColumnInfo().field(field).column(column.name())
-                    .keyProperty(column.keyProperty()).insert(column.insert()).update(column.update())
-                    .alias(StringUtils.isBlank(column.alias()) ? field.getName() : column.alias()));
+            columnInfos.add(new ColumnInfo().field(field).column(column.name()).insert(column.insert()).update(column.update())
+                    .prop(StringUtils.isBlank(column.alias()) ? field.getName() : column.alias()));
         }
 
         return columnInfos;

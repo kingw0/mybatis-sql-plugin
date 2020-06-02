@@ -30,7 +30,11 @@ public class Insert extends Sql<Insert> {
         return Joiner.join(this.append(VALUES), COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
     }
 
-    public Insert values(Expression<Insert>... values) {
+    public Insert values(Expression<Insert> values) {
         return Joiner.join(this.append(VALUES), COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
+    }
+
+    public Insert append(Expression<Insert> values) {
+        return values.write(this.append(COMMA_WITH_SPACE).append(OPEN_BRACKET)).append(CLOSE_BRACKET);
     }
 }

@@ -28,7 +28,7 @@ public class Update extends Sql<Update> {
     }
 
     public Update where(Condition<Update> condition) {
-        return condition.write(this.append(KW_WHERE));
+        return condition != null ? condition.write(this.append(KW_WHERE)) : this;
     }
 
     private Update innerSet(String column, Expression<Update> value) {

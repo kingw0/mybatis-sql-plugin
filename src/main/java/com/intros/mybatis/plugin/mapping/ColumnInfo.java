@@ -19,12 +19,7 @@ public class ColumnInfo {
     /**
      * column alias
      */
-    private String alias;
-
-    /**
-     *
-     */
-    private boolean keyProperty;
+    private String prop;
 
     /**
      *
@@ -61,21 +56,12 @@ public class ColumnInfo {
         return this;
     }
 
-    public String alias() {
-        return alias;
+    public String prop() {
+        return prop;
     }
 
-    public ColumnInfo alias(String alias) {
-        this.alias = alias;
-        return this;
-    }
-
-    public boolean keyProperty() {
-        return keyProperty;
-    }
-
-    public ColumnInfo keyProperty(boolean keyProperty) {
-        this.keyProperty = keyProperty;
+    public ColumnInfo prop(String prop) {
+        this.prop = prop;
         return this;
     }
 
