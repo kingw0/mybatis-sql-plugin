@@ -64,16 +64,16 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param sqlType
      */
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
-        if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
-            options = context.getMapperMethod().getAnnotation(Options.class);
-        }
-
         analyzeParameters(context.getMapperMethod());
 
         analyzeProvider(context);
 
         if (providerMethod == null || methodHandle == null) {
             hasProvider = false;
+
+            if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
+                options = context.getMapperMethod().getAnnotation(Options.class);
+            }
 
             // no provider
             analyzeMappingClass(context.getMapperMethod(), sqlType);
@@ -374,7 +374,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
         if (providerClass.isInterface()) {
             result = MethodHandles.spreadInvoker(methodHandle.type(), 0).invokeExact(methodHandle, params);
         } else {
-            result = methodHandle.invokeExact(params);
+            result = methodHandle.invokeWithArguments(params);
         }
 
         return result == null ? null : result.toString();

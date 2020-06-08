@@ -100,7 +100,6 @@ public class SQLTest {
         Delete delete = new Delete("t_test").where(Condition.bracket(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
     }
 
-    @Test
     public void runBenchmark() throws RunnerException {
         Options opt = new OptionsBuilder()
                 // 导入要测试的类

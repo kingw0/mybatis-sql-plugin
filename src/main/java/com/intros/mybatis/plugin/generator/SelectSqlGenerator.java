@@ -1,6 +1,7 @@
 package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
+import com.intros.mybatis.plugin.sql.Pageable;
 import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.utils.MappingUtils;
@@ -15,6 +16,10 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
     protected List<Column<Select>> columns;
 
+    protected String pageableParam;
+
+    protected boolean isPageable;
+
     /**
      * Constructor for generator
      *
@@ -26,6 +31,14 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
         if (!hasProvider) {
             columns = MappingUtils.columns(mappingClass, true);
+
+            for (int i = 0, len = this.mapperMethodParams.length; i < len; i++) {
+                if (Pageable.class.isAssignableFrom(this.mapperMethodParams[i].getType())) {
+                    isPageable = true;
+                    pageableParam = this.paramNames[i];
+                    break;
+                }
+            }
         }
     }
 
@@ -38,6 +51,11 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
         Select select = new Select().columns(columns).from(this.mappingInfo.table()).where(prepareCondition(paramObject));
+
+        if (isPageable) {
+            Pageable pageable = (Pageable) extractParam(paramObject, pageableParam);
+            select.limit(pageable.limit()).offset(pageable.offset());
+        }
 
         String sql = select.toString();
 

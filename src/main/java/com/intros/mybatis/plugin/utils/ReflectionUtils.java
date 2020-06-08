@@ -82,7 +82,7 @@ public class ReflectionUtils {
      * @throws ReflectiveOperationException
      */
     public static MethodHandle getStaticMethodHandle(Class<?> clazz, Method method) throws ReflectiveOperationException {
-        MethodType methodType = MethodType.methodType(clazz, method.getParameterTypes());
+        MethodType methodType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         return lookup.findStatic(clazz, method.getName(), methodType);
     }
