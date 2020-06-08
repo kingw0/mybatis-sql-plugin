@@ -3,6 +3,7 @@ package com.intros.mybatis.plugin.utils;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.Sql;
+import com.intros.mybatis.plugin.sql.Table;
 import com.intros.mybatis.plugin.sql.constants.BindType;
 import com.intros.mybatis.plugin.sql.expression.Bind;
 import com.intros.mybatis.plugin.sql.expression.Column;
@@ -18,6 +19,22 @@ import static com.intros.mybatis.plugin.sql.constants.BindType.BIND;
 
 public class MappingUtils {
     private static final MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
+
+    public static <S extends Sql<S>> Table<S> table(Class<?> mappingClass) {
+        return table(mappingClass, null);
+    }
+
+    public static <S extends Sql<S>> Table<S> table(Class<?> mappingClass, String alias) {
+        return Table.table(registry.mappingInfo(mappingClass).table()).as(alias);
+    }
+
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass) {
+        return columns(mappingClass, true);
+    }
+
+    public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, String table) {
+        return columns(mappingClass, table, true, null);
+    }
 
     public static <S extends Sql<S>> List<Column<S>> columns(Class<?> mappingClass, boolean alias) {
         return columns(mappingClass, alias, null);
@@ -97,6 +114,7 @@ public class MappingUtils {
     public static <R> R mapping(Class<?> mappingClass, Function<List<ColumnInfo>, R> mapper) {
         return mapper.apply(registry.mappingInfo(mappingClass).columnInfos());
     }
+
 
     /**
      * @param mappingClass

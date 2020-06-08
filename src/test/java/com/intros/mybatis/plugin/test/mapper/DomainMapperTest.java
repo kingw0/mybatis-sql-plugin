@@ -2,10 +2,7 @@ package com.intros.mybatis.plugin.test.mapper;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -18,7 +15,6 @@ import java.util.List;
 public class DomainMapperTest extends MapperTest {
 
     @Test
-    @Benchmark
     public void testSelectByCriteria() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByCriteria("teddy");
@@ -29,7 +25,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testSelectByProvider() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByProvider("teddy");
@@ -40,7 +35,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testSelectByInCriteria() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByInCriteria(Arrays.asList(1L));
@@ -59,7 +53,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testSelectByMultiCriteria() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByMultiCriteria("teddy", Arrays.asList(1L));
@@ -81,7 +74,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testInsert() {
         execute(session -> {
             Domain domain = new Domain();
@@ -100,7 +92,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testBatchInsert() {
         execute(session -> {
             List<Domain> domains = Arrays.asList(new Domain().name("lily"), new Domain().name("andy"));
@@ -116,7 +107,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testUpdate() {
         execute(session -> {
             Domain domain = new Domain().name("fred");
@@ -135,7 +125,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testBatchUpdateByKeyProperty() {
         execute(session -> {
             Domain domain = new Domain();
@@ -155,7 +144,6 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    @Benchmark
     public void testDelete() {
         execute(session -> {
             Domain domain = new Domain();
@@ -171,7 +159,6 @@ public class DomainMapperTest extends MapperTest {
         });
     }
 
-    @Test
     public void runBenchmark() throws RunnerException {
         Options opt = new OptionsBuilder()
                 // 导入要测试的类
