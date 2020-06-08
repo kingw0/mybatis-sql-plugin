@@ -63,29 +63,21 @@ public class SQLTest {
                         .and(exists(new Select().columns(text("X")).from("t_test").where(column("name_").eq("teddy"))))
                         .and(column("grade_").in(10, 20, 30, 40))
                 );
-
-        System.out.println(select);
     }
 
     @Test
     public void testDelete() {
         Delete delete = new Delete("t_test").where(Condition.bracket(column("id_").eq(15).and(column("name_").like("%teddy%"))).and(column("grade_").lt(5)));
-
-        System.out.println(delete);
     }
 
     @Test
     public void testUpdate() {
         Update update = new Update("t_test").set("name_", "teddy").set("age_", 10).where(column("id_").eq(10));
-
-        System.out.println(update);
     }
 
     @Test
     public void testInsert() {
         Insert insert = new Insert("t_test").columns("id_", "name_").values(list(number(10), text("teddy")));
-
-        System.out.println(insert);
     }
 
     @Benchmark
