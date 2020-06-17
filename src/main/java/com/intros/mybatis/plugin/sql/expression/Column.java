@@ -7,20 +7,6 @@ import com.intros.mybatis.plugin.utils.StringUtils;
 import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
 
 public class Column<S extends Sql<S>> extends Expression<S> {
-    private static final Class<Column> THIS_CLASS = Column.class;
-
-    static {
-        registerFactory(THIS_CLASS, (initArgs -> {
-            if (initArgs.length == 1) {
-                return new Column((String) initArgs[0]);
-            } else if (initArgs.length == 2) {
-                return new Column((String) initArgs[0], (String) initArgs[1]);
-            }
-
-            return null;
-        }));
-    }
-
     private String table;
 
     private String column;
@@ -37,11 +23,11 @@ public class Column<S extends Sql<S>> extends Expression<S> {
     }
 
     public static Column column(String column) {
-        return instance(THIS_CLASS, column);
+        return new Column(column);
     }
 
     public static Column column(String table, String column) {
-        return instance(THIS_CLASS, table, column);
+        return new Column(table, column);
     }
 
     public Column as(String alias) {

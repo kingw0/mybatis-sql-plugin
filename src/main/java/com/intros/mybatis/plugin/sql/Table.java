@@ -7,12 +7,6 @@ import com.intros.mybatis.plugin.utils.StringUtils;
  * @param <S>
  */
 public class Table<S extends Sql<S>> extends SqlPart<S> {
-    private static final Class<Table> THIS_CLASS = Table.class;
-
-    static {
-        registerFactory(THIS_CLASS, initArgs -> new Table((String) initArgs[0]));
-    }
-
     private String table;
 
     private String alias;
@@ -22,7 +16,7 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
     }
 
     public static Table table(String table) {
-        return instance(THIS_CLASS, table);
+        return new Table(table);
     }
 
     public Table as(String alias) {

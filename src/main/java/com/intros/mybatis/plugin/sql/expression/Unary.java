@@ -3,13 +3,10 @@ package com.intros.mybatis.plugin.sql.expression;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.UnaryExpressionOp;
 
+import static com.intros.mybatis.plugin.sql.constants.UnaryExpressionOp.IDENTITY;
+import static com.intros.mybatis.plugin.sql.constants.UnaryExpressionOp.NEGATION;
+
 public class Unary<S extends Sql<S>> extends Expression<S> {
-    private static final Class<Unary> THIS_CLASS = Unary.class;
-
-    static {
-        registerFactory(THIS_CLASS, (initArgs -> new Unary((Expression) initArgs[0], (UnaryExpressionOp) initArgs[1])));
-    }
-
     private Expression<S> expr;
 
     private UnaryExpressionOp op;
@@ -20,11 +17,11 @@ public class Unary<S extends Sql<S>> extends Expression<S> {
     }
 
     public static <S extends Sql<S>> Unary<S> identity(Expression<S> expr) {
-        return instance(THIS_CLASS, expr, UnaryExpressionOp.IDENTITY);
+        return new Unary<>(expr, IDENTITY);
     }
 
     public static <S extends Sql<S>> Unary<S> negation(Expression<S> expr) {
-        return instance(THIS_CLASS, expr, UnaryExpressionOp.NEGATION);
+        return new Unary<>(expr, NEGATION);
     }
 
     @Override

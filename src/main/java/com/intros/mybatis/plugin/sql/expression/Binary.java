@@ -3,25 +3,13 @@ package com.intros.mybatis.plugin.sql.expression;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BinaryExpressionOp;
 
+import static com.intros.mybatis.plugin.sql.constants.BinaryExpressionOp.*;
+
 /**
  * @param <S> type of SQL
  * @author teddy
  */
 public class Binary<S extends Sql<S>> extends Expression<S> {
-    private static final Class<Binary> THIS_CLASS = Binary.class;
-
-    static {
-        registerFactory(THIS_CLASS, (initArgs -> {
-            if (initArgs.length == 3) {
-                if (initArgs[0] instanceof Expression && initArgs[1] instanceof BinaryExpressionOp && initArgs[2] instanceof Expression) {
-                    return new Binary((Expression) initArgs[0], (BinaryExpressionOp) initArgs[1], (Expression) initArgs[2]);
-                }
-            }
-
-            return null;
-        }));
-    }
-
     private Expression<S> left;
 
     private Expression<S> right;
@@ -35,19 +23,19 @@ public class Binary<S extends Sql<S>> extends Expression<S> {
     }
 
     public static <S extends Sql<S>> Binary<S> add(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, BinaryExpressionOp.ADDITION, right);
+        return new Binary<>(left, ADDITION, right);
     }
 
     public static <S extends Sql<S>> Binary<S> sub(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, BinaryExpressionOp.SUBTRACTION, right);
+        return new Binary<>(left, SUBTRACTION, right);
     }
 
     public static <S extends Sql<S>> Binary<S> mul(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, BinaryExpressionOp.MULTIPLICATION, right);
+        return new Binary<>(left, MULTIPLICATION, right);
     }
 
     public static <S extends Sql<S>> Binary<S> div(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, BinaryExpressionOp.DIVISION, right);
+        return new Binary<>(left, DIVISION, right);
     }
 
     @Override
