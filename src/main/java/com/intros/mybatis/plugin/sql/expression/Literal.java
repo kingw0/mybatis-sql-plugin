@@ -10,22 +10,6 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.SINGLE_QUOTES;
  * @author teddy
  */
 public class Literal<S extends Sql<S>> extends Expression<S> {
-    private static final Class<Literal> THIS_CLASS = Literal.class;
-
-    static {
-        registerFactory(THIS_CLASS, (initArgs -> {
-            if (initArgs.length == 1) {
-                if (initArgs[0] instanceof String) {
-                    return new Literal((String) initArgs[0]);
-                } else if (initArgs[0] instanceof Number) {
-                    return new Literal((Number) initArgs[0]);
-                }
-            }
-
-            return null;
-        }));
-    }
-
     private Object literal;
 
     private Type type;
@@ -41,11 +25,11 @@ public class Literal<S extends Sql<S>> extends Expression<S> {
     }
 
     public static Literal number(Number number) {
-        return instance(THIS_CLASS, number);
+        return new Literal(number);
     }
 
     public static Literal text(String text) {
-        return instance(THIS_CLASS, text);
+        return new Literal(text);
     }
 
     @Override

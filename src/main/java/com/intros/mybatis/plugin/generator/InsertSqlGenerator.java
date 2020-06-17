@@ -4,7 +4,7 @@ import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.expression.Bind;
-import com.intros.mybatis.plugin.utils.MappingUtils;
+import com.intros.mybatis.plugin.utils.Mapping;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +35,9 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
         if (!hasProvider) {
             insertColumnFilter = columnInfo -> columnInfo.insert() ? (options == null ? true : !options.useGeneratedKeys() || !columnInfo.prop().equals(options.keyProperty())) : false;
 
-            columns = MappingUtils.list(this.mappingClass, ColumnInfo::column, insertColumnFilter);
+            columns = Mapping.list(this.mappingClass, ColumnInfo::column, insertColumnFilter);
 
-            List<String> props = MappingUtils.list(this.mappingClass, ColumnInfo::prop, insertColumnFilter);
+            List<String> props = Mapping.list(this.mappingClass, ColumnInfo::prop, insertColumnFilter);
 
             if (multiQuery) {
                 String paramStart = this.paramNames[0] + OPEN_SQUARE_BRACKET;

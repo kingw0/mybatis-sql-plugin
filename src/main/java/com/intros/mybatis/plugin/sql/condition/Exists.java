@@ -10,12 +10,6 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  * @param <S>
  */
 public class Exists<S extends Sql<S>> extends Condition<S> {
-    private static final Class<Exists> THIS_CLASS = Exists.class;
-
-    static {
-        registerFactory(THIS_CLASS, initArgs -> new Exists((Sql) initArgs[0]));
-    }
-
     private Sql<S> sql;
 
     protected Exists(Sql<S> sql) {
@@ -23,7 +17,7 @@ public class Exists<S extends Sql<S>> extends Condition<S> {
     }
 
     public static <S extends Sql<S>> Exists<S> exists(Sql<S> sql) {
-        return instance(THIS_CLASS, sql);
+        return new Exists<>(sql);
     }
 
     @Override

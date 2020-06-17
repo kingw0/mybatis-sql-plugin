@@ -4,13 +4,9 @@ import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.BinaryConditionOp;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 
+import static com.intros.mybatis.plugin.sql.constants.BinaryConditionOp.*;
+
 public class Comparison<S extends Sql<S>> extends Condition<S> {
-    private static final Class<Comparison> THIS_CLASS = Comparison.class;
-
-    static {
-        registerFactory(THIS_CLASS, initArgs -> new Comparison((Expression) initArgs[0], (Expression) initArgs[1], (BinaryConditionOp) initArgs[2]));
-    }
-
     private Expression<S> left;
 
     private Expression<S> right;
@@ -24,31 +20,31 @@ public class Comparison<S extends Sql<S>> extends Condition<S> {
     }
 
     public static <S extends Sql<S>> Comparison eq(Expression left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.EQ);
+        return new Comparison(left, right, EQ);
     }
 
     public static <S extends Sql<S>> Comparison gt(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.GT);
+        return new Comparison(left, right, GT);
     }
 
     public static <S extends Sql<S>> Comparison gte(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.GTE);
+        return new Comparison(left, right, GTE);
     }
 
     public static <S extends Sql<S>> Comparison lt(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.LT);
+        return new Comparison(left, right, LT);
     }
 
     public static <S extends Sql<S>> Comparison lte(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.LTE);
+        return new Comparison(left, right, LTE);
     }
 
     public static <S extends Sql<S>> Comparison neq(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.NEQ);
+        return new Comparison(left, right, NEQ);
     }
 
     public static <S extends Sql<S>> Comparison like(Expression<S> left, Expression<S> right) {
-        return instance(THIS_CLASS, left, right, BinaryConditionOp.LIKE);
+        return new Comparison(left, right, LIKE);
     }
 
     @Override

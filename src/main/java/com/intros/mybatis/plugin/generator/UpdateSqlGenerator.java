@@ -4,7 +4,7 @@ import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Joiner;
 import com.intros.mybatis.plugin.sql.Update;
-import com.intros.mybatis.plugin.utils.MappingUtils;
+import com.intros.mybatis.plugin.utils.Mapping;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +40,9 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         if (!hasProvider) {
             updateColumnFilter = columnInfo -> columnInfo.update() ? (options == null ? true : !columnInfo.prop().equals(options.keyProperty())) : false;
 
-            List<String> columns = MappingUtils.list(this.mappingClass, ColumnInfo::column, updateColumnFilter);
+            List<String> columns = Mapping.list(this.mappingClass, ColumnInfo::column, updateColumnFilter);
 
-            List<String> props = MappingUtils.list(this.mappingClass, ColumnInfo::prop, updateColumnFilter);
+            List<String> props = Mapping.list(this.mappingClass, ColumnInfo::prop, updateColumnFilter);
 
             if (multiQuery) {
                 String paramStart = this.paramNames[0] + OPEN_SQUARE_BRACKET;

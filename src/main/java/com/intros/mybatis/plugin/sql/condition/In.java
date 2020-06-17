@@ -13,12 +13,6 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  * @author teddy
  */
 public class In<S extends Sql<S>> extends Condition<S> {
-    private static final Class<In> THIS_CLASS = In.class;
-
-    static {
-        registerFactory(THIS_CLASS, initArgs -> new In((Expression) initArgs[0], (Expression[]) initArgs[1]));
-    }
-
     private Expression<S> expr;
 
     private Expression<S>[] values;
@@ -29,7 +23,7 @@ public class In<S extends Sql<S>> extends Condition<S> {
     }
 
     public static <S extends Sql<S>> In<S> in(Expression<S> expr, Expression<S>... values) {
-        return instance(THIS_CLASS, expr, values);
+        return new In(expr, values);
     }
 
     @Override

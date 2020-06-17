@@ -13,12 +13,6 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_BETWEEN;
  * @author teddy
  */
 public class Between<S extends Sql<S>> extends Condition<S> {
-    private static final Class<Between> THIS_CLASS = Between.class;
-
-    static {
-        registerFactory(THIS_CLASS, initArgs -> new Between((Expression) initArgs[0], (Expression) initArgs[1], (Expression) initArgs[2]));
-    }
-
     private Expression<S> expr;
 
     private Expression<S> lower;
@@ -32,7 +26,7 @@ public class Between<S extends Sql<S>> extends Condition<S> {
     }
 
     public static <S extends Sql<S>> Between<S> between(Expression<S> expr, Expression<S> lower, Expression<S> upper) {
-        return instance(THIS_CLASS, expr, lower, upper);
+        return new Between<>(expr, lower, upper);
     }
 
     @Override

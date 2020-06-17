@@ -14,18 +14,6 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  * @author teddy
  */
 public class Case<S extends Sql<S>> extends Expression<S> {
-    private static final Class<Case> THIS_CLASS = Case.class;
-
-    static {
-        registerFactory(THIS_CLASS, (initArgs -> {
-            if (initArgs != null && initArgs.length == 1) {
-                return new Case((Expression) initArgs[0]);
-            }
-
-            return new Case();
-        }));
-    }
-
     private List<SqlWriter<S>> exprs = new ArrayList<>(4);
 
     private List<Expression<S>> values = new ArrayList<>(4);
@@ -50,11 +38,11 @@ public class Case<S extends Sql<S>> extends Expression<S> {
     }
 
     public static <S extends Sql<S>> Case<S> cas(Expression<S> expr) {
-        return instance(THIS_CLASS, expr);
+        return new Case<>(expr);
     }
 
     public static <S extends Sql<S>> Case<S> cas() {
-        return instance(THIS_CLASS);
+        return new Case<>();
     }
 
     public Case when(Expression<S> expr, Expression<S> value) {
