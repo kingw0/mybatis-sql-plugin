@@ -193,6 +193,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
         switch (type) {
             case "in":
                 return column(column).in(Bind.bind(paramName, paramSize(paramValue, paramValue.getClass())));
+            case "like":
+                return column(column).like(Bind.bind(paramName));
             default:
                 return Comparison.<S>eq(column(column), bind(paramName));
         }
@@ -361,6 +363,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
             for (int i = 0, len = this.mapperMethodParams.length; i < len; i++) {
                 params[i] = ((Map) paramObject).get(this.paramNames[i]);
             }
+
+            return params;
         }
 
         return null;
