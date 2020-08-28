@@ -1,5 +1,8 @@
 package com.intros.mybatis.plugin.annotation;
 
+import com.intros.mybatis.plugin.sql.condition.generator.ConditionGenerator;
+import com.intros.mybatis.plugin.sql.condition.generator.Eq;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -13,7 +16,5 @@ import java.lang.annotation.Target;
 public @interface Criteria {
     String column();
 
-    String type() default "eq";
-
-    Class<?> paramClass() default String.class;
+    Class<? extends ConditionGenerator> condition() default Eq.class;
 }

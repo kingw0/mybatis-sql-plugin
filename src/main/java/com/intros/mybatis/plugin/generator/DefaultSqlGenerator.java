@@ -8,9 +8,8 @@ import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.Sql;
-import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.sql.expression.Bind;
+import com.intros.mybatis.plugin.sql.condition.generator.ConditionGenerator;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
@@ -21,11 +20,10 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 /**
@@ -40,17 +38,20 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
  * @since 2019/08/23
  */
 public class DefaultSqlGenerator implements SqlGenerator {
+    public static final String GENERIC_NAME_PREFIX = "param";
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-
     private static MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
 
     protected Options options;
     // mapping info
     protected Class<?> mappingClass;
     protected MappingInfo mappingInfo;
+    protected Optional<ColumnInfo> keyColumn;
     protected boolean multiQuery = false;
     protected boolean hasParamAnnotation;
     protected Parameter[] mapperMethodParams;
+    protected Map<Parameter, ConditionGenerator> conditions = new HashMap<>();
+    protected Map<Parameter, Criteria> criteria = new HashMap<>();
     protected String[] paramNames;
     protected boolean hasProvider = true;
     private Class<?> providerClass;
@@ -79,6 +80,10 @@ public class DefaultSqlGenerator implements SqlGenerator {
             analyzeMappingClass(context.getMapperMethod(), sqlType);
 
             this.mappingInfo = registry.mappingInfo(this.mappingClass);
+
+            if (options != null) {
+                this.keyColumn = this.mappingInfo.columnInfos().stream().filter(columnInfo -> columnInfo.prop().equals(options.keyProperty())).findFirst();
+            }
         }
     }
 
@@ -116,40 +121,27 @@ public class DefaultSqlGenerator implements SqlGenerator {
     }
 
     /**
-     * @param paramObject
+     * Extract param value from mybatis wrapped parameter
+     *
+     * <p>
+     * {@link  org.apache.ibatis.reflection.ParamNameResolver#getNamedParams}
+     * </p>
+     *
+     * @param param
      * @param paramName
      * @return
      */
-    protected Object extractParam(Object paramObject, String paramName) {
+    protected Object getArgByParamName(Object param, String paramName) {
         if (this.mapperMethodParams.length == 0) {
             return null;
-        } else if (paramObject instanceof Map) {
-            return ((Map) paramObject).get(paramName);
-        } else if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
+        } else if (param instanceof Map) {
             // if has param annotation,mybatis will put the param in a map
-            return paramObject;
+            return ((Map) param).get(paramName);
+        } else if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
+            return param;
         }
 
         return null;
-    }
-
-    /**
-     * get param size if param is collection or array
-     *
-     * @param paramObj
-     * @param paramType
-     * @return
-     */
-    protected int paramSize(Object paramObj, Class<?> paramType) {
-        int size = -1;
-
-        if (Collection.class.isAssignableFrom(paramType)) {
-            size = ((Collection) paramObj).size();
-        } else if (paramType.isArray()) {
-            size = ((Object[]) paramObj).length;
-        }
-
-        return size;
     }
 
     /**
@@ -165,7 +157,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
         // construct condition from mapping class
         for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
             if (options != null && columnInfo.prop().equals(options.keyProperty())) {
-                Condition<S> cond = Comparison.<S>eq(column(columnInfo.column()), bind(paramName, Arrays.asList(columnInfo.prop())));
+                Condition<S> cond = column(columnInfo.column()).eq(bindProp(paramName, columnInfo.prop()));
                 condition = condition == null ? cond : condition.and(cond);
             }
         }
@@ -173,31 +165,56 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return condition;
     }
 
-    protected <S extends Sql<S>> Condition<S> prepareCondition(Object paramObject) {
+    /**
+     * Construct condition from key property of param object
+     *
+     * @param paramName
+     * @param <S>
+     * @return
+     */
+    protected <S extends Sql<S>> Condition<S> queryCondByKeyProperty(String paramName) {
+        if (!this.keyColumn.isPresent()) {
+            throw new IllegalStateException("Mapper method has no options with key property!");
+        }
+
+        ColumnInfo bindColumn = keyColumn.get();
+
+        return column(bindColumn.column()).eq(bindProp(paramName, bindColumn.prop()));
+    }
+
+    protected <S extends Sql<S>> Condition<S> queryCondByKeyProperty(String paramName, int index) {
+        if (!this.keyColumn.isPresent()) {
+            throw new IllegalStateException("Mapper method has no options with key property!");
+        }
+
+        ColumnInfo bindColumn = keyColumn.get();
+
+        return column(bindColumn.column()).eq(bindIndexProp(paramName, index, bindColumn.prop()));
+    }
+
+
+    /**
+     * Construct condition from param's criteria annotation
+     *
+     * @param paramObject
+     * @param <S>
+     * @return
+     */
+    protected <S extends Sql<S>> Condition<S> queryCondByCriteria(Object paramObject) {
         Condition<S> condition = null;
 
         for (int i = 0, len = this.paramNames.length; i < len; i++) {
             Parameter parameter = this.mapperMethodParams[i];
 
-            if (parameter.isAnnotationPresent(Criteria.class)) {
-                Criteria criteria = parameter.getAnnotation(Criteria.class);
-                Condition<S> cond = condition(criteria.type(), criteria.column(), paramNames[i], extractParam(paramObject, paramNames[i]));
-                condition = condition == null ? cond : condition.and(cond);
+            ConditionGenerator conditionGenerator = conditions.get(parameter);
+
+            if (conditionGenerator != null) {
+                Condition<S> newCondition = conditionGenerator.build(criteria.get(parameter), paramNames[i], getArgByParamName(paramObject, paramNames[i]));
+                condition = condition == null ? newCondition : condition.and(newCondition);
             }
         }
 
         return condition;
-    }
-
-    private <S extends Sql<S>> Condition<S> condition(String type, String column, String paramName, Object paramValue) {
-        switch (type) {
-            case "in":
-                return column(column).in(Bind.bind(paramName, paramSize(paramValue, paramValue.getClass())));
-            case "like":
-                return column(column).like(Bind.bind(paramName));
-            default:
-                return Comparison.<S>eq(column(column), bind(paramName));
-        }
     }
 
     /**
@@ -239,6 +256,10 @@ public class DefaultSqlGenerator implements SqlGenerator {
     /**
      * Get the parameters of mapper method
      *
+     * <p>
+     *
+     * </p>
+     *
      * @param mapperMethod
      */
     private void analyzeParameters(Method mapperMethod) {
@@ -249,22 +270,23 @@ public class DefaultSqlGenerator implements SqlGenerator {
         int index = 0;
 
         for (Parameter parameter : this.mapperMethodParams) {
-            if (parameter.isAnnotationPresent(Param.class)) {
+            if (!hasParamAnnotation && parameter.isAnnotationPresent(Param.class)) {
                 this.hasParamAnnotation = true;
-                paramNames[index++] = parameter.getAnnotation(Param.class).value();
-            } else {
-                paramNames[index++] = parameter.getName();
             }
-        }
 
-        if (index == 1) {
-            // parameter length is one
-            Class<?> type = this.mapperMethodParams[0].getType();
+            paramNames[index++] = paramName(parameter, index);
 
-            if (Collection.class.isAssignableFrom(type)) {
-                paramNames[0] = "collection";
-            } else if (type.isArray()) {
-                paramNames[0] = "array";
+            // prepare query condition
+            if (parameter.isAnnotationPresent(Criteria.class)) {
+                Criteria criterion = parameter.getAnnotation(Criteria.class);
+
+                try {
+                    conditions.put(parameter, criterion.condition().newInstance());
+                    criteria.put(parameter, criterion);
+                } catch (ReflectiveOperationException e) {
+                    int pos = index - 1;
+                    LOGGER.warn("Failed to create criteria of parameter[{}] at pos[{}]!", paramNames[pos], pos, e);
+                }
             }
         }
     }
@@ -347,60 +369,82 @@ public class DefaultSqlGenerator implements SqlGenerator {
     }
 
     /**
-     * @param paramObject
-     * @param providerMethod
+     * Get parameter's name by mybatis rule
+     *
+     * <p>
+     * Mybatis will wrap parameter by parameter's name before execute statement.
+     * You can find how mybatis get parameter in {@link org.apache.ibatis.reflection.ParamNameResolver} and {@link org.apache.ibatis.session.defaults.DefaultSqlSession#wrapCollection(Object}
+     * </p>
+     *
+     * @param parameter
      * @return
      */
-    private Object[] extractParams(Object paramObject, Method providerMethod) {
-        if (this.mapperMethodParams.length == 0) {
-            return null;
-        } else if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
-            // if has param annotation,mybatis will put the param in a map
-            return new Object[]{paramObject};
-        } else if (paramObject instanceof Map) {
-            Object[] params = new Object[this.mapperMethodParams.length];
+    private String paramName(Parameter parameter, int index) {
+        String paramName;
 
-            for (int i = 0, len = this.mapperMethodParams.length; i < len; i++) {
-                params[i] = ((Map) paramObject).get(this.paramNames[i]);
-            }
-
-            return params;
+        if (parameter.isAnnotationPresent(Param.class)) {
+            paramName = parameter.getAnnotation(Param.class).value();
+        } else {
+            paramName = parameter.getName();
         }
 
-        return null;
+        if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
+            Class<?> type = this.mapperMethodParams[0].getType();
+
+            if (List.class.isAssignableFrom(type)) {
+                paramName = "list";
+            } else if (Collection.class.isAssignableFrom(type)) {
+                paramName = "collection";
+            } else if (type.isArray()) {
+                paramName = "array";
+            }
+        }
+
+        if (paramName == null) {
+            return GENERIC_NAME_PREFIX + index;
+        }
+
+        return paramName;
+    }
+
+    /**
+     * Convert sql param to mapper method args
+     *
+     * <p>
+     * Mybatis will use {@link org.apache.ibatis.reflection.ParamNameResolver#getNamedParams(Object[])} to convert mapper method to sql command param.
+     * We use this method to convert sql command param back to args
+     * </p>
+     *
+     * @param param
+     * @return
+     */
+    private Object[] convertSqlParamToArgs(Object param) {
+        int len = this.mapperMethodParams.length;
+
+        Object[] args = len == 0 || param == null ? null : new Object[len];
+
+        if (len == 1 && !this.hasParamAnnotation) {
+            args[0] = param;
+        } else if (param instanceof Map) {
+            for (int index = 0; index < len; index++) {
+                args[index] = ((Map) param).get(this.paramNames[index]);
+            }
+        }
+
+        return args;
     }
 
     private String getSqlFromProvider(Object paramObject) throws Throwable {
         Object result;
 
-        Object[] params = extractParams(paramObject, providerMethod);
+        Object[] args = convertSqlParamToArgs(paramObject);
 
         if (providerClass.isInterface()) {
-            result = MethodHandles.spreadInvoker(methodHandle.type(), 0).invokeExact(methodHandle, params);
+            result = MethodHandles.spreadInvoker(methodHandle.type(), 0).invokeExact(methodHandle, args);
         } else {
-            result = methodHandle.invokeWithArguments(params);
+            result = methodHandle.invokeWithArguments(args);
         }
 
         return result == null ? null : result.toString();
-    }
-
-    /**
-     * @param criteria
-     * @param paramName
-     * @param <S>
-     * @return
-     */
-    private <S extends Sql<S>> Condition<S> condition(Criteria criteria, String paramName, int size) {
-        Condition<S> condition;
-
-        switch (criteria.type()) {
-            case "in":
-                condition = column(criteria.column()).in(Bind.bind(paramName, size));
-                break;
-            default:
-                condition = Comparison.<S>eq(column(criteria.column()), bind(paramName));
-        }
-
-        return condition;
     }
 }

@@ -3,6 +3,7 @@ package com.intros.mybatis.plugin.test.mapper;
 import com.intros.mybatis.plugin.ResolvedSqlProvider;
 import com.intros.mybatis.plugin.annotation.Criteria;
 import com.intros.mybatis.plugin.annotation.Mapping;
+import com.intros.mybatis.plugin.sql.condition.generator.In;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -15,10 +16,10 @@ public interface DomainMapper {
     List<Domain> selectByProvider(String name);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
-    List<Domain> selectByInCriteria(@Criteria(column = "id_", type = "in") List<Long> ids);
+    List<Domain> selectByInCriteria(@Criteria(column = "id_", condition = In.class) List<Long> ids);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
-    List<Domain> selectByMultiCriteria(@Criteria(column = "name_") String name, @Criteria(column = "id_", type = "in") List<Long> ids);
+    List<Domain> selectByMultiCriteria(@Criteria(column = "name_") String name, @Criteria(column = "id_", condition = In.class) List<Long> ids);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
     List<Domain> select();

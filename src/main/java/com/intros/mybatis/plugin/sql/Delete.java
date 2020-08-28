@@ -13,6 +13,10 @@ public class Delete extends Sql<Delete> {
         append(KW_DELETE).append(table);
     }
 
+    public Delete(Table table) {
+        append(KW_DELETE).append(table);
+    }
+
     public Delete where(Condition<Delete> condition) {
         return condition == null ? this : condition.write(this.append(KW_WHERE));
     }

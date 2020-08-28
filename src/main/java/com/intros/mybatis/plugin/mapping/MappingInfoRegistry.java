@@ -110,6 +110,8 @@ public class MappingInfoRegistry {
                 continue;
             }
 
+            field.setAccessible(true);
+
             Column column = field.getAnnotation(COLUMN_CLASS);
 
             columnInfos.add(new ColumnInfo().field(field).column(column.name()).insert(column.insert()).update(column.update())
