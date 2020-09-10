@@ -1,6 +1,13 @@
 package com.intros.mybatis.plugin.mapping;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author teddy
@@ -10,6 +17,16 @@ public class MappingInfo {
      * mapping class
      */
     private Class<?> clazz;
+
+    /**
+     *
+     */
+    private BeanInfo beanInfo;
+
+    /**
+     *
+     */
+    private Map<String, PropertyDescriptor> propertyDescriptors = new HashMap<>();
 
     /**
      * table name
@@ -27,6 +44,12 @@ public class MappingInfo {
 
     public MappingInfo clazz(Class<?> clazz) {
         this.clazz = clazz;
+        try {
+            this.beanInfo = Introspector.getBeanInfo(clazz);
+            Arrays.stream(this.beanInfo.getPropertyDescriptors()).forEach(propertyDescriptor -> propertyDescriptors.put(propertyDescriptor.getName(), propertyDescriptor));
+        } catch (IntrospectionException e) {
+            // not a java bean
+        }
         return this;
     }
 
@@ -45,6 +68,13 @@ public class MappingInfo {
 
     public MappingInfo columnInfos(List<ColumnInfo> columnInfos) {
         this.columnInfos = columnInfos;
+
+        for (ColumnInfo columnInfo : columnInfos) {
+            if (this.beanInfo != null) {
+                columnInfo.propertyDescriptor(propertyDescriptors.get(columnInfo.prop()));
+            }
+        }
+
         return this;
     }
 }

@@ -18,6 +18,10 @@ public class Insert extends Sql<Insert> {
         append(INSERT).append(table);
     }
 
+    public Insert(Table table) {
+        append(INSERT).append(table);
+    }
+
     public Insert columns(List<String> columns) {
         return Joiner.joins(this, COMMA_WITH_SPACE, OPEN_BRACKET_WITH_SPACE, CLOSE_BRACKET, columns);
     }

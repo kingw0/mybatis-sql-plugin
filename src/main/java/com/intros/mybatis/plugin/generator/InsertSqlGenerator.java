@@ -3,65 +3,50 @@ package com.intros.mybatis.plugin.generator;
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Insert;
-import com.intros.mybatis.plugin.sql.expression.Bind;
-import com.intros.mybatis.plugin.utils.Mapping;
+import com.intros.mybatis.plugin.sql.Table;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_SQUARE_BRACKET;
-import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_SQUARE_BRACKET;
-import static com.intros.mybatis.plugin.sql.expression.Bind.bind;
+import static com.intros.mybatis.plugin.sql.Table.table;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProps;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindMultiProps;
+import static com.intros.mybatis.plugin.utils.ParameterUtils.sizeOfParam;
 
 public class InsertSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertSqlGenerator.class);
 
-    private static final int MAX_MULTI_SIZE = 256;
+    private Table table;
 
-    // insert sql column info filter
-    private Predicate<ColumnInfo> insertColumnFilter;
+    private List<ColumnInfo> columnInfos;
 
-    private Insert insert;
-    private List<String> columns;
-    private List<Bind<Insert>> binds = new ArrayList<>(MAX_MULTI_SIZE);
+    private String[] columns;
+
+    private String[] props;
 
     public InsertSqlGenerator(ProviderContext context, SqlType sqlType) {
         super(context, sqlType);
 
         if (!hasProvider) {
-            insertColumnFilter = columnInfo -> columnInfo.insert() ? (options == null ? true : !options.useGeneratedKeys() || !columnInfo.prop().equals(options.keyProperty())) : false;
+            table = table(this.mappingClass);
+            columnInfos = this.mappingInfo.columnInfos();
 
-            columns = Mapping.list(this.mappingClass, ColumnInfo::column, insertColumnFilter);
+            List<ColumnInfo> filteredColumnInfos = this.columnInfos.stream().filter(this::canInsert).collect(Collectors.toList());
 
-            List<String> props = Mapping.list(this.mappingClass, ColumnInfo::prop, insertColumnFilter);
+            int filteredSize = filteredColumnInfos.size();
 
-            if (multiQuery) {
-                String paramStart = this.paramNames[0] + OPEN_SQUARE_BRACKET;
+            this.columns = filteredColumnInfos.stream().map(ColumnInfo::column).collect(Collectors.toList()).toArray(new String[filteredSize]);
 
-                for (int i = 0; i < MAX_MULTI_SIZE; i++) {
-                    binds.add(Bind.bind(paramStart + i + CLOSE_SQUARE_BRACKET, props));
-                }
-            } else {
-                insert = insert(this.mappingInfo.table(), columns, this.hasParamAnnotation ? this.paramNames[0] : null, props);
-            }
+            this.props = filteredColumnInfos.stream().map(ColumnInfo::prop).collect(Collectors.toList()).toArray(new String[filteredSize]);
         }
     }
 
     @Override
     protected String sql(ProviderContext context, Object paramObject) {
         return insert(context, paramObject);
-    }
-
-    private Insert insert(String table, List<String> columns, String paramName, List<String> props) {
-        if (columns.size() != props.size()) {
-            throw new IllegalArgumentException("The size of columns must be the same as props.");
-        }
-
-        return new Insert(table).columns(columns).values(bind(paramName, props));
     }
 
     /**
@@ -74,24 +59,42 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
     private String insert(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
-        String sql = "";
+        String sql;
+
+        Insert insert = new Insert(this.table);
+
+        String paramName = multiQuery ? this.paramNames[0] : this.hasParamAnnotation ? this.paramNames[0] : null;
+
+        insert.columns(this.columns);
 
         if (multiQuery) {
-            int size = paramSize(extractParam(paramObject, this.paramNames[0]), this.mapperMethodParams[0].getType());
+            int index = 0, size = sizeOfParam(getArgByParamName(paramObject, this.paramNames[0]));
 
-            Insert insert = new Insert(this.mappingInfo.table()).columns(columns).values(binds.get(0));
+            insert.values(bindIndexProps(paramName, index++, this.props));
 
-            for (int i = 1; i < size; i++) {
-                insert.append(binds.get(i));
+            for (; index < size; index++) {
+                insert.append(bindIndexProps(paramName, index, this.props));
             }
-
-            sql = insert.toString();
         } else {
-            sql = insert.toString();
+            insert.values(bindMultiProps(paramName, this.props));
         }
+
+        sql = insert.toString();
 
         LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
 
         return sql;
+    }
+
+    private boolean canInsert(ColumnInfo columnInfo) {
+        if (!columnInfo.insert()) {
+            return false;
+        }
+
+        if (options != null && options.useGeneratedKeys() && columnInfo.prop().equals(options.keyProperty())) {
+            return false;
+        }
+
+        return true;
     }
 }

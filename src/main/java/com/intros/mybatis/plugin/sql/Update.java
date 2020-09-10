@@ -15,6 +15,10 @@ public class Update extends Sql<Update> {
         this.append(KW_UPDATE).append(table).append(KW_SET);
     }
 
+    public Update(Table<Update> table) {
+        this.append(KW_UPDATE).append(table).append(KW_SET);
+    }
+
     public Update set(String column, Expression<Update> value) {
         return innerSet(column, value);
     }

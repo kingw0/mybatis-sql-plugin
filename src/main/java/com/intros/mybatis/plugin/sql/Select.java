@@ -82,6 +82,16 @@ public class Select extends Sql<Select> {
 
     /**
      * @param table
+     * @return
+     * @throws IOException
+     */
+    public Select join(String table) {
+        return join(table, Join.INNER);
+    }
+
+
+    /**
+     * @param table
      * @param join
      * @return
      * @throws IOException
@@ -89,6 +99,15 @@ public class Select extends Sql<Select> {
     public Select join(String table, Join join) {
         return this.append(join.join()).append(table);
     }
+
+    /**
+     * @param table
+     * @return
+     */
+    public Select join(Table<Select> table) {
+        return join(table, Join.INNER);
+    }
+
 
     /**
      * @param table

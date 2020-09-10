@@ -1,24 +1,33 @@
 package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
+import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Pageable;
 import com.intros.mybatis.plugin.sql.Select;
+import com.intros.mybatis.plugin.sql.Table;
 import com.intros.mybatis.plugin.sql.expression.Column;
-import com.intros.mybatis.plugin.utils.Mapping;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.intros.mybatis.plugin.sql.Table.table;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
 
+    private Table<Select> table;
+
+    private List<ColumnInfo> columnInfos;
+
     protected List<Column<Select>> columns;
 
-    protected String pageableParam;
+    protected String pageableParamName;
 
-    protected boolean isPageable;
+    protected boolean pageable;
 
     /**
      * Constructor for generator
@@ -30,12 +39,20 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         super(context, sqlType);
 
         if (!hasProvider) {
-            columns = Mapping.columns(mappingClass, true);
+            this.table = table(this.mappingClass);
+
+            this.columnInfos = this.mappingInfo.columnInfos();
+
+            this.columns = new ArrayList<>(columnInfos.size());
+
+            for (ColumnInfo columnInfo:this.columnInfos) {
+                this.columns.add(table.column(columnInfo.column()).as(columnInfo.prop()));
+            }
 
             for (int i = 0, len = this.mapperMethodParams.length; i < len; i++) {
                 if (Pageable.class.isAssignableFrom(this.mapperMethodParams[i].getType())) {
-                    isPageable = true;
-                    pageableParam = this.paramNames[i];
+                    pageable = true;
+                    pageableParamName = this.paramNames[i];
                     break;
                 }
             }
@@ -50,16 +67,16 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
     private String buildSelect(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
-        Select select = new Select().columns(columns).from(this.mappingInfo.table()).where(prepareCondition(paramObject));
+        Select select = new Select().columns(this.columns).from(this.table).where(queryCondByCriteria(paramObject));
 
-        if (isPageable) {
-            Pageable pageable = (Pageable) extractParam(paramObject, pageableParam);
+        if (pageable) {
+            Pageable pageable = (Pageable) getArgByParamName(paramObject, pageableParamName);
             select.limit(pageable.limit()).offset(pageable.offset());
         }
 
         String sql = select.toString();
 
-        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql, context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
 
         return sql;
     }
