@@ -79,21 +79,21 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private Update updateColumns(Update update, Object param, String paramName, List<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
             if (canUpdate(param, columnInfo)) {
-                update.set(columnInfo.column(), bindProp(paramName, columnInfo.prop())).where(queryCondByKeyProperty(paramName));
+                update.set(columnInfo.column(), bindProp(paramName, columnInfo.prop()));
             }
         }
 
-        return update;
+        return update.where(queryCondByKeyProperty(paramName));
     }
 
     private Update updateColumns(Update update, Object param, String paramName, int index, List<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
             if (canUpdate(specificValueInParam(param, index), columnInfo)) {
-                update.set(columnInfo.column(), bindIndexProp(paramName, index, columnInfo.prop())).where(queryCondByKeyProperty(paramName, index));
+                update.set(columnInfo.column(), bindIndexProp(paramName, index, columnInfo.prop()));
             }
         }
 
-        return update;
+        return update.where(queryCondByKeyProperty(paramName, index));
     }
 
     private boolean canUpdate(Object target, ColumnInfo columnInfo) {

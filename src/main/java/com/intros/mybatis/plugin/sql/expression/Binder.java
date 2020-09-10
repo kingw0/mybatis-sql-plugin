@@ -385,7 +385,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
             sql.append(prefixBuffer).append(props[index++]).append(KW_PARAM_NAME_SUFFIX);
 
             for (int len = props.length; index < len; index++) {
-                sql.append(COMMA_WITH_SPACE).append(prefixBuffer).append(props[index++]).append(KW_PARAM_NAME_SUFFIX);
+                sql.append(COMMA_WITH_SPACE).append(prefixBuffer).append(props[index]).append(KW_PARAM_NAME_SUFFIX);
             }
 
             return sql;

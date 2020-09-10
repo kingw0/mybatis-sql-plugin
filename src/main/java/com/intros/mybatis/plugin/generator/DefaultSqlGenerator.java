@@ -423,12 +423,12 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
         Object[] args = len == 0 || param == null ? null : new Object[len];
 
-        if (len == 1 && !this.hasParamAnnotation) {
-            args[0] = param;
-        } else if (param instanceof Map) {
+        if (param instanceof Map) {
             for (int index = 0; index < len; index++) {
                 args[index] = ((Map) param).get(this.paramNames[index]);
             }
+        } else if (len == 1 && !this.hasParamAnnotation) {
+            args[0] = param;
         }
 
         return args;
