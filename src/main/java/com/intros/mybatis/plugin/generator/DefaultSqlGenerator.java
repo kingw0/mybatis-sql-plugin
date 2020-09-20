@@ -324,6 +324,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 }
             } catch (ReflectiveOperationException e) {
                 // ignore
+//                LOGGER.warn("Failed to get provider method!", e);
             }
         }
     }
