@@ -64,13 +64,10 @@ public class ReflectionUtils {
      * @throws ReflectiveOperationException
      */
     public static MethodHandle getDefaultMethodHandle(Object proxy, Method method) throws ReflectiveOperationException {
-        Constructor<MethodHandles.Lookup> constructor = MethodHandles.Lookup.class.getDeclaredConstructor(Class.class, int.class);
-        constructor.setAccessible(true);
-
         Class<?> declaringClass = method.getDeclaringClass();
-        int allModes = MethodHandles.Lookup.PUBLIC | MethodHandles.Lookup.PRIVATE | MethodHandles.Lookup.PROTECTED | MethodHandles.Lookup.PACKAGE;
+        method.setAccessible(true);
 
-        return constructor.newInstance(declaringClass, allModes).unreflectSpecial(method, declaringClass).bindTo(proxy).asType(MethodType.genericMethodType(method.getParameterCount(), false));
+        return  MethodHandles.lookup().unreflectSpecial(method, declaringClass).bindTo(proxy).asType(MethodType.genericMethodType(method.getParameterCount(), false));
     }
 
     /**
@@ -83,8 +80,7 @@ public class ReflectionUtils {
      */
     public static MethodHandle getStaticMethodHandle(Class<?> clazz, Method method) throws ReflectiveOperationException {
         MethodType methodType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        return lookup.findStatic(clazz, method.getName(), methodType);
+        return MethodHandles.lookup().findStatic(clazz, method.getName(), methodType);
     }
 
     /**
