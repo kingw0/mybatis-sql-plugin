@@ -17,4 +17,6 @@ public @interface Criteria {
     String column();
 
     Class<? extends ConditionGenerator> condition() default Eq.class;
+
+    boolean nullable() default true;
 }

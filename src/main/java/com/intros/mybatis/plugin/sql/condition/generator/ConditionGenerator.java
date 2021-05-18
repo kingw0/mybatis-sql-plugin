@@ -11,4 +11,12 @@ import com.intros.mybatis.plugin.sql.condition.Condition;
  */
 public interface ConditionGenerator<S extends Sql<S>> {
     Condition<S> build(Criteria criteria, String paramName, Object paramValue);
+
+    default Condition<S> doBuild(Criteria criteria, String paramName, Object paramValue) {
+        if (!criteria.nullable() && paramValue == null) {
+            return null;
+        }
+
+        return build(criteria, paramName, paramValue);
+    }
 }

@@ -209,7 +209,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
             ConditionGenerator conditionGenerator = conditions.get(parameter);
 
             if (conditionGenerator != null) {
-                Condition<S> newCondition = conditionGenerator.build(criteria.get(parameter), paramNames[i], getArgByParamName(paramObject, paramNames[i]));
+                Condition<S> newCondition = conditionGenerator.doBuild(criteria.get(parameter), paramNames[i], getArgByParamName(paramObject, paramNames[i]));
                 condition = condition == null ? newCondition : condition.and(newCondition);
             }
         }
