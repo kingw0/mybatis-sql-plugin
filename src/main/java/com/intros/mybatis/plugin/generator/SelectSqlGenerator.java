@@ -12,22 +12,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.intros.mybatis.plugin.sql.Table.table;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
-
-    private Table<Select> table;
-
-    private List<ColumnInfo> columnInfos;
-
     protected List<Column<Select>> columns;
-
     protected String pageableParamName;
-
     protected boolean pageable;
+    private Table<Select> table;
+    private List<ColumnInfo> columnInfos;
 
     /**
      * Constructor for generator
@@ -45,7 +39,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             this.columns = new ArrayList<>(columnInfos.size());
 
-            for (ColumnInfo columnInfo:this.columnInfos) {
+            for (ColumnInfo columnInfo : this.columnInfos) {
                 this.columns.add(table.column(columnInfo.column()).as(columnInfo.prop()));
             }
 

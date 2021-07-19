@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 public class Table<S extends Sql<S>> extends SqlPart<S> {
     private static final MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
 
+    private Class<?> mappingClass;
+
     private String table;
 
     private String alias;
@@ -23,12 +25,17 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
         this.table = table;
     }
 
+    public Table(Class<?> mappingClass) {
+        this.table = registry.mappingInfo(mappingClass).table();
+        this.mappingClass = mappingClass;
+    }
+
     public static Table table(String table) {
         return new Table(table);
     }
 
     public static Table table(Class<?> mappingClass) {
-        return table(registry.mappingInfo(mappingClass).table());
+        return new Table(mappingClass);
     }
 
     public Table as(String alias) {
@@ -46,6 +53,13 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
 
     public List<Column<S>> columns(Class<?> mappingClass) {
         return Column.columns(this.alias, mappingClass);
+    }
+
+    public List<Column<S>> columns() {
+        if (this.mappingClass == null) {
+            throw new IllegalArgumentException("Mapping class can not be null when find column info from it!");
+        }
+        return Column.columns(this.alias, this.mappingClass);
     }
 
     @Override

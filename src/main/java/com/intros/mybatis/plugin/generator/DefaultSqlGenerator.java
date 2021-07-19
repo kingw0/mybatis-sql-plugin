@@ -116,7 +116,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param paramObject
      * @return
      */
-    protected String sql(ProviderContext context, Object paramObject) {
+    protected String sql(ProviderContext context, Object paramObject) throws Exception {
         return null;
     }
 
@@ -210,6 +210,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
             if (conditionGenerator != null) {
                 Condition<S> newCondition = conditionGenerator.doBuild(criteria.get(parameter), paramNames[i], getArgByParamName(paramObject, paramNames[i]));
+
+                if (newCondition == null) {
+                    continue;
+                }
+
                 condition = condition == null ? newCondition : condition.and(newCondition);
             }
         }
