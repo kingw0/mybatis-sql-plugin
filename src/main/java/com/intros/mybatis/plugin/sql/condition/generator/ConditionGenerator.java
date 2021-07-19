@@ -17,7 +17,7 @@ public interface ConditionGenerator<S extends Sql<S>> {
     Condition<S> build(Criteria criteria, String paramName, Object paramValue);
 
     default Condition<S> doBuild(Criteria criteria, String paramName, Object paramValue) {
-        if (criteria.testNotNull() && paramValue == null) {
+        if ((criteria.testNotNull() || criteria.testNotBlank()) && paramValue == null) {
             return null;
         }
 
