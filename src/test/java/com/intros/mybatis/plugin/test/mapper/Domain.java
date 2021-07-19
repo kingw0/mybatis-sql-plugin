@@ -5,6 +5,8 @@ import com.intros.mybatis.plugin.annotation.Table;
 
 @Table(name = "t_domain")
 public class Domain {
+    public static final String COLUMN_ID = "id_";
+
     @Column(name = "id_")
     private long id;
 

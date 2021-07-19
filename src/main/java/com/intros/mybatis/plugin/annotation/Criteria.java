@@ -18,5 +18,11 @@ public @interface Criteria {
 
     Class<? extends ConditionGenerator> condition() default Eq.class;
 
-    boolean nullable() default true;
+    String test() default "";
+
+    boolean testNotNull() default false;
+
+    boolean testNotBlank() default false;
+
+    String expression() default "";
 }
