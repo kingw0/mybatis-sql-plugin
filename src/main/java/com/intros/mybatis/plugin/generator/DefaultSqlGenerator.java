@@ -123,19 +123,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return null;
     }
 
-    protected <S extends Sql<S>> Condition<S> condition(CriterionInfo criterionInfo, Object root) {
+    protected Condition condition(CriterionInfo criterionInfo, Object root) {
         return condition(criterionInfo, 0, -1, root);
     }
 
-    protected <S extends Sql<S>> Condition<S> condition(CriterionInfo criterionInfo, int size, int index, Object root) {
+    protected Condition condition(CriterionInfo criterionInfo, int size, int index, Object root) {
         if (!test(criterionInfo.test(), root)) {
             return null;
         }
 
         if (StringUtils.isNotBlank(criterionInfo.expression())) {
-            return new Condition<S>() {
+            return new Condition() {
                 @Override
-                public S write(S sql) {
+                public Sql write(Sql sql) {
                     return sql.append(SPACE).append(criterionInfo.expression()).append(SPACE);
                 }
             };

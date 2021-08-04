@@ -14,10 +14,7 @@ import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static com.intros.mybatis.plugin.sql.Order.asc;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
@@ -77,12 +74,14 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
         Select select = new Select().columns(this.columnList).from(this.table);
 
-        Condition condition = criterionInfos.stream()
+        Optional<Condition> condition = criterionInfos.stream()
                 .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
                 .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2)).orElseGet(() -> null);
+                .reduce((c1, c2) -> c1.and(c2));
 
-        select.where(condition);
+        if (condition.isPresent()) {
+            select.where(condition.get());
+        }
 
         if (sortable) {
             Sorts sorts = (Sorts) paramValue(paramObject, sortableParamName);

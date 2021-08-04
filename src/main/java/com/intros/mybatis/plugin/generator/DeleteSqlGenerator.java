@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class DeleteSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
@@ -32,12 +33,14 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
 
         Delete delete = new Delete(this.table);
 
-        Condition condition = this.criteria.values().stream()
+        Optional<Condition> condition = this.criteria.values().stream()
                 .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
                 .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2)).get();
+                .reduce((c1, c2) -> c1.and(c2));
 
-        delete.where(condition);
+        if (condition.isPresent()) {
+            delete.where(condition.get());
+        }
 
         String sql = delete.toString();
 

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
 import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
@@ -74,21 +75,25 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private void buildMultiConditions(Update update, Object element, int size, int index,
                                       Collection<CriterionInfo> criterionInfos) {
-        Condition condition = criterionInfos.stream()
+        Optional<Condition> condition = criterionInfos.stream()
                 .map(criterionInfo -> condition(criterionInfo, size, index, element))
                 .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2)).get();
+                .reduce((c1, c2) -> c1.and(c2));
 
-        update.where(condition);
+        if (condition.isPresent()) {
+            update.where(condition.get());
+        }
     }
 
     private void buildConditions(Update update, Object paramObject, Collection<CriterionInfo> criterionInfos) {
-        Condition condition = criterionInfos.stream()
+        Optional<Condition> condition = criterionInfos.stream()
                 .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
                 .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2)).get();
+                .reduce((c1, c2) -> c1.and(c2));
 
-        update.where(condition);
+        if (condition.isPresent()) {
+            update.where(condition.get());
+        }
     }
 
 
