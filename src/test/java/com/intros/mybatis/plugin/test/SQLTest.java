@@ -3,10 +3,10 @@ package com.intros.mybatis.plugin.test;
 import com.intros.mybatis.plugin.annotation.Column;
 import com.intros.mybatis.plugin.annotation.Table;
 import com.intros.mybatis.plugin.sql.Delete;
-import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.Update;
 import com.intros.mybatis.plugin.sql.condition.Condition;
+import com.intros.mybatis.plugin.sql.expression.Binder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -20,11 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.condition.Exists.exists;
-import static com.intros.mybatis.plugin.sql.expression.Binder.*;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bind;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndices;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Expression.bracket;
-import static com.intros.mybatis.plugin.sql.expression.ExpressionList.list;
-import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
@@ -41,14 +40,8 @@ public class SQLTest {
 
     @Test
     public void testBindCollection() {
-        Select select = new Select().columns("a", "b", "c").from("test").where(column("a").in(bindMultiIndex("p", 2)));
+        Select select = new Select().columns("a", "b", "c").from("test").where(column("a").in(Binder.bindIndices("p", 2)));
         Assert.assertEquals("SELECT a, b, c FROM test WHERE a IN (#{p[0]}, #{p[1]})", select.toString());
-    }
-
-    @Test
-    public void testBindProps() {
-        Insert insert = new Insert("test").columns("a", "b", "c").values(bindMultiProps("p", "a", "b", "c"));
-        Assert.assertEquals("INSERT INTO test (a, b, c) VALUES (#{p.a}, #{p.b}, #{p.c})", insert.toString());
     }
 
     @Test
@@ -72,11 +65,6 @@ public class SQLTest {
     @Test
     public void testUpdate() {
         Update update = new Update("t_test").set("name_", "teddy").set("age_", 10).where(column("id_").eq(10));
-    }
-
-    @Test
-    public void testInsert() {
-        Insert insert = new Insert("t_test").columns("id_", "name_").values(list(number(10), text("teddy")));
     }
 
     @Benchmark

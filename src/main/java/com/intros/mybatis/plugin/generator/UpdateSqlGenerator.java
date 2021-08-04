@@ -2,31 +2,39 @@ package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
-import com.intros.mybatis.plugin.sql.Table;
+import com.intros.mybatis.plugin.mapping.CriterionInfo;
 import com.intros.mybatis.plugin.sql.Update;
+import com.intros.mybatis.plugin.sql.condition.Condition;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
+import com.intros.mybatis.plugin.utils.ParameterUtils;
+import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Objects;
 
-import static com.intros.mybatis.plugin.sql.Table.table;
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
-import static com.intros.mybatis.plugin.utils.ParameterUtils.sizeOfParam;
-import static com.intros.mybatis.plugin.utils.ParameterUtils.specificValueInParam;
+import static com.intros.mybatis.plugin.sql.expression.Binder.*;
 
 /**
+ * Generate update sql.
+ *
+ * <p>
+ * Auto generate update sql from mapper method based on Column, Criterion annotation.
+ * <p>
+ * Column annotation can be on method, parameter, or field.
+ * <p>
+ *
  * @author teddy
  */
 // TODO: 2020/9/2 support judge param value
 public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateSqlGenerator.class);
 
-    Table table;
+    private Collection<ColumnInfo> columnInfos;
 
-    private List<ColumnInfo> columnInfos;
+    private Collection<CriterionInfo> criterionInfos;
 
     /**
      * Constructor for generator
@@ -38,35 +46,86 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         super(context, sqlType);
 
         if (!hasProvider) {
-            table = table(this.mappingClass);
-            columnInfos = this.mappingInfo.columnInfos();
+            this.columnInfos = this.columns.values();
+            this.criterionInfos = this.criteria.values();
         }
     }
 
     @Override
     protected String sql(ProviderContext context, Object paramObject) {
-        return buildUpdate(context, paramObject);
+        return update(context, paramObject);
     }
 
-    private String buildUpdate(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
+    private void multiUpdateColumns(Update update, Object element, int index, Collection<ColumnInfo> columnInfos) {
+        for (ColumnInfo columnInfo : columnInfos) {
+            if (shouldUpdate(columnInfo, element)) {
+                update.set(columnInfo.column(), bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+            }
+        }
+    }
 
-        Object arg = getArgByParamName(paramObject, this.paramNames[0]);
+    private void updateColumns(Update update, Object paramObject, Collection<ColumnInfo> columnInfos) {
+        for (ColumnInfo columnInfo : columnInfos) {
+            if (shouldUpdate(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+                update.set(columnInfo.column(), StringUtils.isBlank(columnInfo.parameter())
+                        ? bind(columnInfo.prop()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
+            }
+        }
+    }
+
+    private void buildMultiConditions(Update update, Object element, int size, int index,
+                                      Collection<CriterionInfo> criterionInfos) {
+        Condition condition = criterionInfos.stream()
+                .map(criterionInfo -> condition(criterionInfo, size, index, element))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2)).get();
+
+        update.where(condition);
+    }
+
+    private void buildConditions(Update update, Object paramObject, Collection<CriterionInfo> criterionInfos) {
+        Condition condition = criterionInfos.stream()
+                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2)).get();
+
+        update.where(condition);
+    }
+
+
+    private String update(ProviderContext context, Object paramObject) {
+        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
         Update update = new Update(table);
 
-        String paramName = multiQuery ? this.paramNames[0] : this.hasParamAnnotation ? this.paramNames[0] : null;
-
         if (multiQuery) {
-            int index = 0, size = sizeOfParam(arg);
+            // multi update sql
+            String paramName = this.paramNames[this.mappingParamIndex];
 
-            updateColumns(update, arg, paramName, index++, this.columnInfos);
+            Object paramValue = paramValue(paramObject, paramName);
 
-            for (; index < size; index++) {
-                update.append(Keywords.SEMICOLON_WITH_SPACE).append(updateColumns(new Update(table), arg, paramName, index, this.columnInfos));
+            Collection<Object> collection = ParameterUtils.collection(paramValue);
+
+            int index = 0, size = collection.size();
+
+            Update additional;
+
+            for (Object element : collection) {
+                if (index == 0) {
+                    multiUpdateColumns(update, element, index, columnInfos);
+                    buildMultiConditions(update, element, size, index, criterionInfos);
+                } else {
+                    additional = new Update(table);
+                    multiUpdateColumns(additional, element, index, columnInfos);
+                    buildMultiConditions(additional, element, size, index, criterionInfos);
+                    update.append(Keywords.SEMICOLON_WITH_SPACE).append(additional);
+                }
+
+                index++;
             }
         } else {
-            updateColumns(update, arg, paramName, this.columnInfos);
+            updateColumns(update, paramObject, columnInfos);
+            buildConditions(update, paramObject, criterionInfos);
         }
 
         String sql = update.toString();
@@ -76,43 +135,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         return sql;
     }
 
-    private Update updateColumns(Update update, Object param, String paramName, List<ColumnInfo> columnInfos) {
-        for (ColumnInfo columnInfo : columnInfos) {
-            if (canUpdate(param, columnInfo)) {
-                update.set(columnInfo.column(), bindProp(paramName, columnInfo.prop()));
-            }
-        }
-
-        return update.where(queryCondByKeyProperty(paramName));
-    }
-
-    private Update updateColumns(Update update, Object param, String paramName, int index, List<ColumnInfo> columnInfos) {
-        for (ColumnInfo columnInfo : columnInfos) {
-            if (canUpdate(specificValueInParam(param, index), columnInfo)) {
-                update.set(columnInfo.column(), bindIndexProp(paramName, index, columnInfo.prop()));
-            }
-        }
-
-        return update.where(queryCondByKeyProperty(paramName, index));
-    }
-
-    private boolean canUpdate(Object target, ColumnInfo columnInfo) {
-        if (!columnInfo.update()) {
-            return false;
-        }
-
-        if (options != null && columnInfo.prop().equals(options.keyProperty())) {
-            return false;
-        }
-
-        if (!columnInfo.nullable()) {
-            try {
-                return columnInfo.getValue(target) != null;
-            } catch (ReflectiveOperationException e) {
-                // warn, update
-            }
-        }
-
-        return true;
+    private boolean shouldUpdate(ColumnInfo columnInfo, Object root) {
+        return columnInfo.update() && test(columnInfo.test(), root);
     }
 }

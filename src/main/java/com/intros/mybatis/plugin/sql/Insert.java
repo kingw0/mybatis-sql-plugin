@@ -14,6 +14,8 @@ public class Insert extends Sql<Insert> {
 
     public static final String VALUES = " VALUES ";
 
+    private int valuesCount = 0;
+
     public Insert(String table) {
         append(INSERT).append(table);
     }
@@ -31,14 +33,14 @@ public class Insert extends Sql<Insert> {
     }
 
     public Insert values(List<? extends Expression<Insert>> values) {
-        return Joiner.join(this.append(VALUES), COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
-    }
+        if (valuesCount == 0) {
+            this.append(VALUES);
+        } else {
+            this.append(COMMA_WITH_SPACE);
+        }
 
-    public Insert values(Expression<Insert> values) {
-        return Joiner.join(this.append(VALUES), COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
-    }
+        valuesCount++;
 
-    public Insert append(Expression<Insert> values) {
-        return values.write(this.append(COMMA_WITH_SPACE).append(OPEN_BRACKET)).append(CLOSE_BRACKET);
+        return Joiner.join(this, COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
     }
 }

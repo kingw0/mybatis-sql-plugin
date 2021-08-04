@@ -7,7 +7,7 @@ import com.intros.mybatis.plugin.annotation.Table;
 public class Domain {
     public static final String COLUMN_ID = "id_";
 
-    @Column(name = "id_")
+    @Column(name = "id_", update = false)
     private long id;
 
     @Column(name = "name_")

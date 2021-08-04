@@ -2,30 +2,35 @@ package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
-import com.intros.mybatis.plugin.sql.*;
+import com.intros.mybatis.plugin.mapping.CriterionInfo;
+import com.intros.mybatis.plugin.sql.Order;
+import com.intros.mybatis.plugin.sql.Pageable;
+import com.intros.mybatis.plugin.sql.Select;
+import com.intros.mybatis.plugin.sql.Sorts;
+import com.intros.mybatis.plugin.sql.condition.Condition;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.sql.expression.Column;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.intros.mybatis.plugin.sql.Order.asc;
-import static com.intros.mybatis.plugin.sql.Table.table;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static java.util.stream.Collectors.toList;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
-    protected List<Column<Select>> columns;
-    protected String pageableParamName;
-    protected String sortableParamName;
-    protected boolean pageable;
-    protected boolean sortable;
-    private Table<Select> table;
-    private List<ColumnInfo> columnInfos;
+    private List<Column<Select>> columnList;
+    private Collection<CriterionInfo> criterionInfos;
+    private String pageableParamName;
+    private String sortableParamName;
+    private boolean pageable;
+    private boolean sortable;
 
     /**
      * Constructor for generator
@@ -37,18 +42,16 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         super(context, sqlType);
 
         if (!hasProvider) {
-            this.table = table(this.mappingClass);
+            this.columnList = new LinkedList<>();
 
-            this.columnInfos = this.mappingInfo.columnInfos();
-
-            this.columns = new ArrayList<>(columnInfos.size());
-
-            for (ColumnInfo columnInfo : this.columnInfos) {
-                this.columns.add(table.column(columnInfo.column()).as(columnInfo.prop()));
+            for (ColumnInfo columnInfo : this.columns.values()) {
+                columnList.add(Column.column(columnInfo.column()).as(columnInfo.prop()));
             }
 
-            for (int i = 0, len = this.mapperMethodParams.length; i < len; i++) {
-                Class<?> paramClass = this.mapperMethodParams[i].getType();
+            this.criterionInfos = this.criteria.values();
+
+            for (int i = 0, len = this.parameters.length; i < len; i++) {
+                Class<?> paramClass = this.parameters[i].getType();
                 if (Pageable.class.isAssignableFrom(paramClass)) {
                     pageable = true;
                     pageableParamName = this.paramNames[i];
@@ -72,11 +75,17 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
     private String buildSelect(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
 
-        Select select = new Select().columns(this.columns).from(this.table).where(queryCondByCriteria(paramObject));
+        Select select = new Select().columns(this.columnList).from(this.table);
+
+        Condition condition = criterionInfos.stream()
+                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2)).orElseGet(() -> null);
+
+        select.where(condition);
 
         if (sortable) {
-            Sorts sorts = (Sorts) getArgByParamName(paramObject,
-                    sortableParamName);
+            Sorts sorts = (Sorts) paramValue(paramObject, sortableParamName);
 
             if (sorts != null) {
                 List<Order> orders =
@@ -87,7 +96,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         }
 
         if (pageable) {
-            Pageable pageable = (Pageable) getArgByParamName(paramObject, pageableParamName);
+            Pageable pageable = (Pageable) paramValue(paramObject, pageableParamName);
 
             if (pageable != null) {
                 select.limit(pageable.limit()).offset(pageable.offset());
