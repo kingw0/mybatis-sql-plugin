@@ -3,9 +3,9 @@ package com.intros.mybatis.plugin.sql.condition.builder;
 import com.intros.mybatis.plugin.mapping.CriterionInfo;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.utils.StringUtils;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.*;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 /**
@@ -20,8 +20,7 @@ public class Builder<S extends Sql<S>> {
      * @return
      */
     public Condition<S> build(CriterionInfo criterionInfo, Object root) {
-        return column(criterionInfo.column()).eq(StringUtils.isBlank(criterionInfo.parameter()) ?
-                bind(criterionInfo.prop()) : bindProp(criterionInfo.parameter(), criterionInfo.prop()));
+        return column(criterionInfo.column()).eq(bindProp(criterionInfo.parameter(), criterionInfo.prop()));
     }
 
     /**

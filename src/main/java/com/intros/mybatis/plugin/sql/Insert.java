@@ -43,4 +43,16 @@ public class Insert extends Sql<Insert> {
 
         return Joiner.join(this, COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
     }
+
+    public Insert values(Expression<Insert>... values) {
+        if (valuesCount == 0) {
+            this.append(VALUES);
+        } else {
+            this.append(COMMA_WITH_SPACE);
+        }
+
+        valuesCount++;
+
+        return Joiner.join(this, COMMA_WITH_SPACE, OPEN_BRACKET, CLOSE_BRACKET, values);
+    }
 }

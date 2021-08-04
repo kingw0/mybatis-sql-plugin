@@ -7,7 +7,6 @@ import com.intros.mybatis.plugin.sql.Update;
 import com.intros.mybatis.plugin.sql.condition.Condition;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.utils.ParameterUtils;
-import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Objects;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.*;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
 
 /**
  * Generate update sql.
@@ -67,8 +67,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private void updateColumns(Update update, Object paramObject, Collection<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
-                update.set(columnInfo.column(), StringUtils.isBlank(columnInfo.parameter())
-                        ? bind(columnInfo.prop()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
+                update.set(columnInfo.column(), bindProp(columnInfo.parameter(), columnInfo.prop()));
             }
         }
     }

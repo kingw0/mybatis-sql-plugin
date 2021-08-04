@@ -11,42 +11,44 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
  * @param <S>
  */
 public class Binder<S extends Sql<S>> extends Expression<S> {
-    protected String param;
+    protected String[] params;
 
     protected BindType bindType;
 
     protected Binder() {
     }
 
-    public Binder(String param) {
-        this(param, BIND);
+    public Binder(String... params) {
+        this(BIND, params);
     }
 
-    public Binder(String param, BindType bindType) {
-        if (StringUtils.isBlank(param)) {
-            throw new IllegalArgumentException("Binder's param can not be null!");
+    public Binder(BindType bindType, String... params) {
+        if (params != null && params.length > 0) {
+            this.params = params;
+            this.bindType = bindType;
+        } else {
+            throw new IllegalArgumentException("Binder's params can not be null!");
         }
-        this.param = param;
-        this.bindType = bindType;
     }
 
     /**
-     * @param param
+     * @param params
      * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bind(String param) {
-        return new Binder<>(param);
+    public static <S extends Sql<S>> Binder<S> bind(String... params) {
+        return new Binder<>(params);
     }
 
+
     /**
-     * @param param
      * @param bindType
+     * @param params
      * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bind(String param, BindType bindType) {
-        return new Binder<>(param, bindType);
+    public static <S extends Sql<S>> Binder<S> bind(BindType bindType, String... params) {
+        return new Binder<>(bindType, params);
     }
 
     /**
@@ -68,7 +70,30 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static <S extends Sql<S>> Binder<S> bindProp(String param, BindType bindType, String prop) {
-        return StringUtils.isBlank(prop) ? new Binder<>(param, bindType) : new PropBinder<>(param, bindType, prop);
+        if (StringUtils.isBlank(param) && StringUtils.isBlank(prop)) {
+            throw new IllegalArgumentException("param and prop can not be null at the same time!");
+        }
+        return StringUtils.isBlank(param)
+                ? bind(prop) : (StringUtils.isBlank(prop) ? bind(param) : new PropBinder<>(param, bindType, prop));
+    }
+
+    /**
+     * @param props
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Binder<S> bindProps(String... props) {
+        return bindProps(null, props);
+    }
+
+    /**
+     * @param param
+     * @param props
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Binder<S> bindProps(String param, String... props) {
+        return StringUtils.isBlank(param) ? bind(props) : bindProps(param, BIND, props);
     }
 
     /**
@@ -79,7 +104,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static <S extends Sql<S>> Binder<S> bindProps(String param, BindType bindType, String... props) {
-        return new MultiPropsBinder<>(param, bindType, props);
+        return new PropsBinder<>(param, bindType, props);
     }
 
     /**
@@ -147,7 +172,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static <S extends Sql<S>> Binder<S> bindIndexProps(String param, BindType bindType, int index, String... props) {
-        return new SetParamMultiPropsBinder<>(param, bindType, index, props);
+        return new IndexPropsBinder<>(param, bindType, index, props);
     }
 
     /**
@@ -168,14 +193,22 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static <S extends Sql<S>> Binder<S> bindIndices(String param, BindType bindType, int size) {
-        return new MultiIndexBinder<>(param, bindType, size);
+        return new IndicesBinder<>(param, bindType, size);
     }
 
     @Override
     public S write(S sql) {
-        return sql.append(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
-                .append(this.param)
-                .append(KW_PARAM_NAME_SUFFIX);
+        int index = 0;
+
+        String prefix = this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2;
+
+        sql.append(prefix).append(this.params[index++]).append(KW_PARAM_NAME_SUFFIX);
+
+        for (; index < this.params.length; index++) {
+            sql.append(COMMA_WITH_SPACE).append(prefix).append(this.params[index]).append(KW_PARAM_NAME_SUFFIX);
+        }
+
+        return sql;
     }
 
     /**
@@ -187,21 +220,15 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         private String prop;
 
         public PropBinder(String param, BindType bindType, String prop) {
-            super(param, bindType);
+            super(bindType, param);
             this.prop = prop;
         }
 
         @Override
         public S write(S sql) {
-            sql.append(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2);
-
-            if (StringUtils.isNotBlank(this.param)) {
-                sql.append(this.param).append(DOT);
-            }
-
-            sql.append(this.prop).append(KW_PARAM_NAME_SUFFIX);
-
-            return sql;
+            return sql.append(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
+                    .append(this.params[0]).append(DOT).append(this.prop)
+                    .append(KW_PARAM_NAME_SUFFIX);
         }
     }
 
@@ -210,17 +237,18 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      *
      * @param <S>
      */
-    public final static class MultiPropsBinder<S extends Sql<S>> extends Binder<S> {
+    public final static class PropsBinder<S extends Sql<S>> extends Binder<S> {
         private String[] props;
 
-        public MultiPropsBinder(String param, BindType bindType, String[] props) {
-            super(param, bindType);
+        public PropsBinder(String param, BindType bindType, String[] props) {
+            super(bindType, param);
             this.props = props;
         }
 
         @Override
         public S write(S sql) {
-            final String prefix = (this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + (StringUtils.isNotBlank(this.param) ? (param + DOT) : "");
+            final String prefix =
+                    (this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + this.params[0] + DOT;
 
             int index = 0;
 
@@ -243,29 +271,31 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         private int index;
 
         public IndexBinder(String param, BindType bindType, int index) {
-            super(param, bindType);
+            super(bindType, param);
             this.index = index;
         }
 
         @Override
         public S write(S sql) {
             return sql.append(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
-                    .append(this.param).append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET)
+                    .append(this.params[0])
+                    .append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET)
                     .append(KW_PARAM_NAME_SUFFIX);
         }
     }
 
-    public final static class MultiIndexBinder<S extends Sql<S>> extends Binder<S> {
+    public final static class IndicesBinder<S extends Sql<S>> extends Binder<S> {
         private int size;
 
-        public MultiIndexBinder(String param, BindType bindType, int size) {
-            super(param, bindType);
+        public IndicesBinder(String param, BindType bindType, int size) {
+            super(bindType, param);
             this.size = size;
         }
 
         @Override
         public S write(S sql) {
-            String prefix = (this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + this.param + OPEN_SQUARE_BRACKET;
+            String prefix =
+                    (this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + this.params[0] + OPEN_SQUARE_BRACKET;
 
             int index = 0;
 
@@ -290,7 +320,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         private String prop;
 
         public IndexPropBinder(String param, BindType bindType, int index, String prop) {
-            super(param, bindType);
+            super(bindType, param);
             this.index = index;
             this.prop = prop;
         }
@@ -298,70 +328,37 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             return sql.append(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
-                    .append(this.param).append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET)
+                    .append(this.params[0]).append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET)
                     .append(DOT).append(this.prop)
                     .append(KW_PARAM_NAME_SUFFIX);
         }
     }
 
     /**
-     * Bind the specific prop of each element of an array parameter
-     *
      * @param <S>
      */
-    public final static class SetParamPropBinder<S extends Sql<S>> extends Binder<S> {
-        private int size;
-
-        private String prop;
-
-        public SetParamPropBinder(String param, BindType bindType, int size, String prop) {
-            super(param, bindType);
-
-            this.size = size;
-            this.prop = prop;
-        }
-
-        @Override
-        public S write(S sql) {
-            String prefix = (this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2) + this.param + OPEN_SQUARE_BRACKET;
-
-            int index = 0;
-
-            sql.append(prefix).append(index++).append(CLOSE_SQUARE_BRACKET).append(DOT).append(this.prop).append(KW_PARAM_NAME_SUFFIX);
-
-            for (; index < this.size; index++) {
-                sql.append(COMMA_WITH_SPACE).append(prefix).append(index).append(CLOSE_SQUARE_BRACKET).append(DOT).append(this.prop).append(KW_PARAM_NAME_SUFFIX);
-            }
-
-            return sql;
-        }
-    }
-
-    /**
-     * @param <S>
-     */
-    public final static class SetParamMultiPropsBinder<S extends Sql<S>> extends Binder<S> {
+    public final static class IndexPropsBinder<S extends Sql<S>> extends Binder<S> {
         private int index;
 
         private String[] props;
 
-        public SetParamMultiPropsBinder(String param, BindType bindType, int index, String[] props) {
-            super(param, bindType);
+        public IndexPropsBinder(String param, BindType bindType, int index, String[] props) {
+            super(bindType, param);
             this.index = index;
             this.props = props;
         }
 
         @Override
         public S write(S sql) {
-            final StringBuilder prefixBuffer = new StringBuilder(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
-                    .append(param).append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET).append(DOT);
+            final StringBuilder prefix = new StringBuilder(this.bindType == BIND ? KW_PARAM_NAME_PREFIX : KW_PARAM_NAME_PREFIX2)
+                    .append(this.params[0]).append(OPEN_SQUARE_BRACKET).append(this.index).append(CLOSE_SQUARE_BRACKET).append(DOT);
 
             int index = 0;
 
-            sql.append(prefixBuffer).append(props[index++]).append(KW_PARAM_NAME_SUFFIX);
+            sql.append(prefix).append(props[index++]).append(KW_PARAM_NAME_SUFFIX);
 
             for (int len = props.length; index < len; index++) {
-                sql.append(COMMA_WITH_SPACE).append(prefixBuffer).append(props[index]).append(KW_PARAM_NAME_SUFFIX);
+                sql.append(COMMA_WITH_SPACE).append(prefix).append(props[index]).append(KW_PARAM_NAME_SUFFIX);
             }
 
             return sql;

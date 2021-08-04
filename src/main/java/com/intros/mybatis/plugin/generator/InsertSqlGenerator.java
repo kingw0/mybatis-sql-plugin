@@ -5,7 +5,6 @@ import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Insert;
 import com.intros.mybatis.plugin.sql.expression.Expression;
 import com.intros.mybatis.plugin.utils.ParameterUtils;
-import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
@@ -13,7 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.*;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
 
 public class InsertSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertSqlGenerator.class);
@@ -110,8 +110,7 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
 
             for (ColumnInfo columnInfo : this.columnInfos) {
                 if (shouldInsert(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
-                    expressions.add(StringUtils.isBlank(columnInfo.parameter())
-                            ? bind(columnInfo.prop()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
+                    expressions.add(bindProp(columnInfo.parameter(), columnInfo.prop()));
                 }
             }
 
