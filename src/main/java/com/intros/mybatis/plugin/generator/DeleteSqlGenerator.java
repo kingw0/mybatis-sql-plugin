@@ -2,17 +2,16 @@ package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.sql.Delete;
-import com.intros.mybatis.plugin.sql.Table;
+import com.intros.mybatis.plugin.sql.condition.Condition;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.intros.mybatis.plugin.sql.Table.table;
+import java.util.Objects;
+import java.util.Optional;
 
 public class DeleteSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-
-    private Table table;
 
     /**
      * Constructor for generator
@@ -22,10 +21,6 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
      */
     public DeleteSqlGenerator(ProviderContext context, SqlType sqlType) {
         super(context, sqlType);
-
-        if (!hasProvider) {
-            table = table(this.mappingClass);
-        }
     }
 
     @Override
@@ -36,7 +31,16 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
     private String buildDelete(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
 
-        Delete delete = new Delete(this.table).where(queryCondByCriteria(paramObject));
+        Delete delete = new Delete(this.table);
+
+        Optional<Condition> condition = this.criteria.values().stream()
+                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2));
+
+        if (condition.isPresent()) {
+            delete.where(condition.get());
+        }
 
         String sql = delete.toString();
 

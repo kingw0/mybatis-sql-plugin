@@ -1,11 +1,14 @@
 package com.intros.mybatis.plugin.sql;
 
+import com.intros.mybatis.plugin.mapping.ColumnInfo;
+import com.intros.mybatis.plugin.mapping.MappingInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.utils.StringUtils;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,12 +24,17 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
 
     private String alias;
 
+    private List<Column<S>> columns;
+
     protected Table(String table) {
         this.table = table;
     }
 
     public Table(Class<?> mappingClass) {
-        this.table = registry.mappingInfo(mappingClass).table();
+        MappingInfo mappingInfo = registry.mappingInfo(mappingClass);
+
+        this.table = mappingInfo.table();
+
         this.mappingClass = mappingClass;
     }
 
@@ -51,15 +59,17 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
         return Arrays.stream(columns).map(this::column).collect(Collectors.toList());
     }
 
-    public List<Column<S>> columns(Class<?> mappingClass) {
-        return Column.columns(this.alias, mappingClass);
-    }
-
     public List<Column<S>> columns() {
         if (this.mappingClass == null) {
-            throw new IllegalArgumentException("Mapping class can not be null when find column info from it!");
+            throw new IllegalStateException("Mapping class is null!");
         }
-        return Column.columns(this.alias, this.mappingClass);
+
+        this.columns = new LinkedList<>();
+
+        for (ColumnInfo columnInfo : registry.mappingInfo(this.mappingClass).columnInfos()) {
+            columns.add(Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
+        }
+        return this.columns;
     }
 
     @Override

@@ -1,19 +1,17 @@
 package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
-import com.intros.mybatis.plugin.annotation.Criteria;
-import com.intros.mybatis.plugin.annotation.Mapping;
-import com.intros.mybatis.plugin.annotation.Provider;
+import com.intros.mybatis.plugin.annotation.*;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
-import com.intros.mybatis.plugin.mapping.MappingInfo;
-import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
+import com.intros.mybatis.plugin.mapping.CriterionInfo;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.sql.condition.generator.ConditionGenerator;
 import com.intros.mybatis.plugin.utils.ReflectionUtils;
-import org.apache.ibatis.annotations.Options;
+import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.builder.annotation.ProviderContext;
+import org.apache.ibatis.exceptions.ExceptionFactory;
+import org.apache.ibatis.scripting.xmltags.OgnlCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
-import static com.intros.mybatis.plugin.sql.expression.Column.column;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
 
 /**
  * Default Sql Generator, one generator instance for one mapper method
@@ -39,21 +35,18 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
  */
 public class DefaultSqlGenerator implements SqlGenerator {
     public static final String GENERIC_NAME_PREFIX = "param";
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-    private static MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
 
-    protected Options options;
-    // mapping info
-    protected Class<?> mappingClass;
-    protected MappingInfo mappingInfo;
-    protected Optional<ColumnInfo> keyColumn;
-    protected boolean multiQuery = false;
-    protected boolean hasParamAnnotation;
-    protected Parameter[] mapperMethodParams;
-    protected Map<Parameter, ConditionGenerator> conditions = new HashMap<>();
-    protected Map<Parameter, Criteria> criteria = new HashMap<>();
-    protected String[] paramNames;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
+
     protected boolean hasProvider = true;
+    protected boolean hasParamAnnotation;
+    protected boolean multiQuery = false;
+    protected String table;
+    protected int mappingParamIndex = -1;
+    protected Parameter[] parameters;
+    protected String[] paramNames;
+    protected Map<String, ColumnInfo> columns = new LinkedHashMap<>();
+    protected Map<String, CriterionInfo> criteria = new HashMap<>();
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
@@ -65,25 +58,13 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param sqlType
      */
     public DefaultSqlGenerator(ProviderContext context, SqlType sqlType) {
-        analyzeParameters(context.getMapperMethod());
+        processMapperParameter(context.getMapperMethod());
 
-        analyzeProvider(context);
+        findSqlProvider(context);
 
         if (providerMethod == null || methodHandle == null) {
             hasProvider = false;
-
-            if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
-                options = context.getMapperMethod().getAnnotation(Options.class);
-            }
-
-            // no provider
-            analyzeMappingClass(context.getMapperMethod(), sqlType);
-
-            this.mappingInfo = registry.mappingInfo(this.mappingClass);
-
-            if (options != null) {
-                this.keyColumn = this.mappingInfo.columnInfos().stream().filter(columnInfo -> columnInfo.prop().equals(options.keyProperty())).findFirst();
-            }
+            process(context.getMapperMethod(), sqlType);
         }
     }
 
@@ -100,13 +81,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
     public String generate(ProviderContext context, Object paramObject, SqlType sqlType) throws Throwable {
         if (providerMethod != null && methodHandle != null) {
             // if we can find the default provider method, use the default method to generate sql
-            return getSqlFromProvider(paramObject);
-        } else if (mappingClass != null) {
-            // generate sql through mapping class
+            return generateSqlFromProvider(paramObject);
+        } else {
+            // generate sql from mapper method automatically
             return sql(context, paramObject);
         }
-
-        throw new IllegalStateException("Oops,we could not generate sql from provider or by default strategy(from root class).");
     }
 
     /**
@@ -131,169 +110,280 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param paramName
      * @return
      */
-    protected Object getArgByParamName(Object param, String paramName) {
-        if (this.mapperMethodParams.length == 0) {
+    protected Object paramValue(Object param, String paramName) {
+        if (this.parameters.length == 0) {
             return null;
         } else if (param instanceof Map) {
             // if has param annotation,mybatis will put the param in a map
             return ((Map) param).get(paramName);
-        } else if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
+        } else if (this.parameters.length == 1 && !this.hasParamAnnotation) {
             return param;
         }
 
         return null;
     }
 
-    /**
-     * Get condition from the mapping class's key property
-     *
-     * @param paramName
-     * @param <S>
-     * @return
-     */
-    protected <S extends Sql<S>> Condition<S> mappingCondition(String paramName) {
-        Condition<S> condition = null;
-
-        // construct condition from mapping class
-        for (ColumnInfo columnInfo : this.mappingInfo.columnInfos()) {
-            if (options != null && columnInfo.prop().equals(options.keyProperty())) {
-                Condition<S> cond = column(columnInfo.column()).eq(bindProp(paramName, columnInfo.prop()));
-                condition = condition == null ? cond : condition.and(cond);
-            }
-        }
-
-        return condition;
+    protected Condition condition(CriterionInfo criterionInfo, Object root) {
+        return condition(criterionInfo, 0, -1, root);
     }
 
-    /**
-     * Construct condition from key property of param object
-     *
-     * @param paramName
-     * @param <S>
-     * @return
-     */
-    protected <S extends Sql<S>> Condition<S> queryCondByKeyProperty(String paramName) {
-        if (!this.keyColumn.isPresent()) {
-            throw new IllegalStateException("Mapper method has no options with key property!");
-        }
-
-        ColumnInfo bindColumn = keyColumn.get();
-
-        return column(bindColumn.column()).eq(bindProp(paramName, bindColumn.prop()));
-    }
-
-    protected <S extends Sql<S>> Condition<S> queryCondByKeyProperty(String paramName, int index) {
-        if (!this.keyColumn.isPresent()) {
-            throw new IllegalStateException("Mapper method has no options with key property!");
-        }
-
-        ColumnInfo bindColumn = keyColumn.get();
-
-        return column(bindColumn.column()).eq(bindIndexProp(paramName, index, bindColumn.prop()));
-    }
-
-
-    /**
-     * Construct condition from param's criteria annotation
-     *
-     * @param paramObject
-     * @param <S>
-     * @return
-     */
-    protected <S extends Sql<S>> Condition<S> queryCondByCriteria(Object paramObject) {
-        Condition<S> condition = null;
-
-        for (int i = 0, len = this.paramNames.length; i < len; i++) {
-            Parameter parameter = this.mapperMethodParams[i];
-
-            ConditionGenerator conditionGenerator = conditions.get(parameter);
-
-            if (conditionGenerator != null) {
-                Condition<S> newCondition = conditionGenerator.doBuild(criteria.get(parameter), paramNames[i], getArgByParamName(paramObject, paramNames[i]));
-
-                if (newCondition == null) {
-                    continue;
-                }
-
-                condition = condition == null ? newCondition : condition.and(newCondition);
-            }
-        }
-
-        return condition;
-    }
-
-    /**
-     * @param className
-     * @return
-     */
-    private Class<?> findClass(String className) {
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
+    protected Condition condition(CriterionInfo criterionInfo, int size, int index, Object root) {
+        if (!test(criterionInfo.test(), root)) {
             return null;
         }
+
+        if (StringUtils.isNotBlank(criterionInfo.expression())) {
+            return new Condition() {
+                @Override
+                public Sql write(Sql sql) {
+                    return sql.append(SPACE).append(criterionInfo.expression()).append(SPACE);
+                }
+            };
+        }
+
+        return size > 0 && index > -1 ? criterionInfo.builder().build(criterionInfo, size, index, root) :
+                criterionInfo.builder().build(criterionInfo, root);
     }
 
-    /**
-     * @param mapperType
-     * @return
-     */
-    private Class<?> getInnerSqlProviderClass(Class<?> mapperType) {
-        return findClass(mapperType.getName() + "$Provider");
+    protected boolean test(String test, Object root) {
+        if (StringUtils.isNotBlank(test)) {
+            Object result = OgnlCache.getValue(test, root);
+
+            return result != null && (!(result instanceof Boolean) || (Boolean) result);
+        }
+
+        return true;
     }
 
-    /**
-     * @param mapperType
-     * @return
-     */
-    private Class<?> getSqlProviderClass(Class<?> mapperType) {
-        return findClass(mapperType.getName() + "Provider");
-    }
+    private void processMapperParameter(Method mapperMethod) {
+        this.parameters = mapperMethod.getParameters();
 
-    /**
-     * @param mapperMethod
-     * @return
-     */
-    private Class<?> getSqlProviderFromAnnotation(Method mapperMethod) {
-        return mapperMethod.isAnnotationPresent(Provider.class) ? mapperMethod.getAnnotation(Provider.class).clazz() : null;
-    }
-
-    /**
-     * Get the parameters of mapper method
-     *
-     * <p>
-     *
-     * </p>
-     *
-     * @param mapperMethod
-     */
-    private void analyzeParameters(Method mapperMethod) {
-        this.mapperMethodParams = mapperMethod.getParameters();
-
-        this.paramNames = new String[mapperMethodParams.length];
+        this.paramNames = new String[parameters.length];
 
         int index = 0;
 
-        for (Parameter parameter : this.mapperMethodParams) {
+        for (Parameter parameter : this.parameters) {
             if (!hasParamAnnotation && parameter.isAnnotationPresent(Param.class)) {
                 this.hasParamAnnotation = true;
             }
 
-            paramNames[index++] = paramName(parameter, index);
+            this.paramNames[index] = paramName(parameter, index);
 
-            // prepare query condition
-            if (parameter.isAnnotationPresent(Criteria.class)) {
-                Criteria criterion = parameter.getAnnotation(Criteria.class);
+            index++;
+        }
+    }
 
-                try {
-                    conditions.put(parameter, criterion.condition().newInstance());
-                    criteria.put(parameter, criterion);
-                } catch (ReflectiveOperationException e) {
-                    int pos = index - 1;
-                    LOGGER.warn("Failed to create criteria of parameter[{}] at pos[{}]!", paramNames[pos], pos, e);
+    private void process(Method mapperMethod, SqlType sqlType) {
+        Class<?> mappingClass = findMappingClass(mapperMethod, sqlType, this.parameters);
+
+        if (sqlType == SqlType.DELETE) {
+            if (mapperMethod.isAnnotationPresent(Table.class)) {
+                this.table = mapperMethod.getAnnotation(Table.class).name();
+            } else {
+                throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
+                        "generate sql automatically!");
+            }
+        } else {
+            if (mapperMethod.isAnnotationPresent(Table.class)) {
+                this.table = mapperMethod.getAnnotation(Table.class).name();
+            } else {
+                if (mappingClass != null && mappingClass.isAnnotationPresent(Table.class)) {
+                    this.table = mappingClass.getAnnotation(Table.class).name();
+                } else {
+                    throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
+                            "generate sql automatically!");
                 }
             }
         }
+
+        if (sqlType != SqlType.DELETE) {
+            columns(mapperMethod, mappingClass, this.paramNames, this.parameters);
+        }
+
+        if (sqlType != SqlType.INSERT) {
+            criteria(mapperMethod, this.paramNames, this.parameters);
+        }
+    }
+
+    private void columns(Method mapperMethod, Class<?> mappingClass, String[] paramNames, Parameter[] parameters) {
+        // Get column info from mapping class
+        if (mappingClass != null && !Map.class.isAssignableFrom(mappingClass)) {
+            for (Field field : mappingClass.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Column.class)) {
+                    Column column = field.getAnnotation(Column.class);
+                    this.columns.put(column.name(),
+                            columnInfo(this.mappingParamIndex > -1 ? paramNames[this.mappingParamIndex] : null, field.getName(), column));
+                }
+            }
+        }
+
+        int index = 0;
+
+        // Get column info from parameter annotation
+        for (Parameter parameter : parameters) {
+            if (parameter.isAnnotationPresent(Columns.class)) {
+                for (Column column : parameter.getAnnotation(Columns.class).value()) {
+                    if (!this.columns.containsKey(column.name())) {
+                        this.columns.put(column.name(), columnInfo(paramNames[index], column.prop(), column));
+                    }
+                }
+            }
+            index++;
+        }
+
+        // Get column info from mapper method annotation
+        if (mapperMethod.isAnnotationPresent(Columns.class)) {
+            for (Column column : mapperMethod.getAnnotation(Columns.class).value()) {
+                if (!this.columns.containsKey(column.name())) {
+                    this.columns.put(column.name(), columnInfo(column.parameter(), column.prop(), column));
+                }
+            }
+        }
+    }
+
+    /**
+     * @param paramName
+     * @param column
+     * @return
+     */
+    private ColumnInfo columnInfo(String paramName, String prop, Column column) {
+        return new ColumnInfo().column(column.name()).parameter(paramName).prop(prop).insert(column.insert()).update(column.update())
+                .test(column.test());
+    }
+
+    /**
+     * @param mapperMethod
+     * @param paramNames
+     * @param parameters
+     */
+    private void criteria(Method mapperMethod, String[] paramNames, Parameter[] parameters) {
+        Parameter parameter;
+        String paramName;
+
+        for (int index = 0, len = paramNames.length; index < len; index++) {
+            parameter = parameters[index];
+            paramName = paramNames[index];
+
+            if (parameter.isAnnotationPresent(Criteria.class)) {
+                for (Criterion criterion : parameter.getAnnotation(Criteria.class).value()) {
+                    this.criteria.put(criterion.column(), criterionInfo(paramName, criterion));
+                }
+            } else if (parameter.isAnnotationPresent(Criterion.class)) {
+                Criterion criterion = parameter.getAnnotation(Criterion.class);
+                this.criteria.put(criterion.column(), criterionInfo(paramName, criterion));
+            }
+        }
+
+        if (mapperMethod.isAnnotationPresent(Criteria.class)) {
+            for (Criterion criterion : mapperMethod.getAnnotation(Criteria.class).value()) {
+                if (!this.criteria.containsKey(criterion.column())) {
+                    this.criteria.put(criterion.column(), criterionInfo(criterion.parameter(), criterion));
+                }
+            }
+        } else if (mapperMethod.isAnnotationPresent(Criterion.class)) {
+            Criterion criterion = mapperMethod.getAnnotation(Criterion.class);
+            this.criteria.put(criterion.column(), criterionInfo(criterion.parameter(), criterion));
+        }
+    }
+
+    /**
+     * @param paramName
+     * @param criterion
+     * @return
+     */
+    private CriterionInfo criterionInfo(String paramName, Criterion criterion) {
+        try {
+            return new CriterionInfo().column(criterion.column()).expression(criterion.expression()).test(criterion.test()).parameter(paramName).prop(criterion.prop()).builder(criterion.builder().getDeclaredConstructor().newInstance());
+        } catch (ReflectiveOperationException e) {
+            throw ExceptionFactory.wrapException("Failed to create condition from criterion " + criterion + "!", e);
+        }
+    }
+
+    /**
+     * @param mapperMethod
+     * @param sqlType
+     * @return
+     */
+    private Class<?> findMappingClass(Method mapperMethod, SqlType sqlType, Parameter[] parameters) {
+        Class<?> mappingClass = null;
+        if (sqlType == SqlType.SELECT) {
+            mappingClass = actualType(mapperMethod.getGenericReturnType());
+        } else if (sqlType == SqlType.INSERT || sqlType == SqlType.UPDATE) {
+            int index = -1;
+
+            for (Parameter parameter : parameters) {
+                Class<?> parameterType = actualType(parameter.getParameterizedType());
+
+                if (parameterType.isAnnotationPresent(Table.class) || Map.class.isAssignableFrom(parameterType)) {
+                    this.mappingParamIndex = ++index;
+                    mappingClass = parameterType;
+                    break;
+                }
+            }
+
+            Class<?> mappingParamType = parameters[this.mappingParamIndex].getType();
+
+            this.multiQuery =
+                    this.mappingParamIndex > -1 && (Collection.class.isAssignableFrom(mappingParamType) || mappingParamType.isArray());
+        }
+
+        return mappingClass;
+    }
+
+    /**
+     * @param type
+     * @return
+     */
+    private Class<?> actualType(Type type) {
+        if (type instanceof ParameterizedType && Collection.class.isAssignableFrom((Class<?>) ((ParameterizedType) type).getRawType())) {
+            return (Class<?>) ((ParameterizedType) type).getActualTypeArguments()[0];
+        } else if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+            return clazz.isArray() ? clazz.getComponentType() : clazz;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get parameter's name by mybatis rule
+     *
+     * <p>
+     * Mybatis will wrap parameter by parameter's name before execute statement.
+     * You can find how mybatis get parameter in {@link org.apache.ibatis.reflection.ParamNameResolver} and
+     * org.apache.ibatis.session.defaults.DefaultSqlSession#wrapCollection(Object)
+     * </p>
+     * TODO: 2021/8/4 skip special parameters (i.e. {@link org.apache.ibatis.session.RowBounds} or {@link org.apache.ibatis.session.ResultHandler}) ?
+     *
+     * @param parameter
+     * @return
+     */
+    private String paramName(Parameter parameter, int index) {
+        String paramName;
+
+        if (parameter.isAnnotationPresent(Param.class)) {
+            paramName = parameter.getAnnotation(Param.class).value();
+        } else {
+            paramName = parameter.getName();
+        }
+
+        if (this.parameters.length == 1 && !this.hasParamAnnotation) {
+            Class<?> type = this.parameters[0].getType();
+
+            if (List.class.isAssignableFrom(type)) {
+                paramName = "list";
+            } else if (Collection.class.isAssignableFrom(type)) {
+                paramName = "collection";
+            } else if (type.isArray()) {
+                paramName = "array";
+            } else if (!type.isPrimitive() && !CharSequence.class.isAssignableFrom(type)) {
+                paramName = null;
+            }
+        } else if (paramName == null) {
+            return GENERIC_NAME_PREFIX + index;
+        }
+
+        return paramName;
     }
 
     /**
@@ -302,19 +392,21 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param context
      * @return
      */
-    private void analyzeProvider(ProviderContext context) {
+    private void findSqlProvider(ProviderContext context) {
         Class<?> mapperType = context.getMapperType();
 
         Method mapperMethod = context.getMapperMethod();
 
-        providerClass = getInnerSqlProviderClass(mapperType);
+        // Find if there has provider class in mapper. eg., TestMapper$Provider
+        providerClass = findClass(mapperType.getName() + "$Provider");
 
         if (providerClass == null) {
-            providerClass = getSqlProviderClass(mapperType);
+            // Find if there has provider class which name is mapper class name + Provider. eg., TestMapperProvider
+            providerClass = findClass(mapperType.getName() + "Provider");
         }
 
         if (providerClass == null) {
-            providerClass = getSqlProviderFromAnnotation(mapperMethod);
+            providerClass = mapperMethod.isAnnotationPresent(Provider.class) ? mapperMethod.getAnnotation(Provider.class).clazz() : null;
         }
 
         if (providerClass != null) {
@@ -335,82 +427,36 @@ public class DefaultSqlGenerator implements SqlGenerator {
     }
 
     /**
-     * Get mapping class of the mapper
-     *
-     * @param mapperMethod
-     * @param sqlType
+     * @param className
+     * @return
      */
-    private void analyzeMappingClass(Method mapperMethod, SqlType sqlType) {
-        if (mapperMethod.isAnnotationPresent(Mapping.class)) {
-            mappingClass = mapperMethod.getAnnotation(Mapping.class).value();
-        } else if (sqlType == SqlType.SELECT) {
-            // select statement, get root class from the return type of mapper method
-            Type returnType = mapperMethod.getGenericReturnType();
-
-            // return type is collection, get the actual type
-            if (returnType instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethod.getReturnType())) {
-                mappingClass = ReflectionUtils.getActualType((ParameterizedType) returnType).get(0);
-            } else if (returnType instanceof Class<?>) {
-                // return type is not Map or Collection
-                Class<?> clazz = (Class<?>) returnType;
-                mappingClass = clazz.isArray() ? clazz.getComponentType() : clazz;
-            }
-        } else if (sqlType == SqlType.INSERT || sqlType == SqlType.UPDATE) {
-            if (mapperMethodParams.length == 1) {
-                Type type = mapperMethodParams[0].getParameterizedType();
-
-                if (type instanceof ParameterizedType && Collection.class.isAssignableFrom(mapperMethodParams[0].getType())) {
-                    multiQuery = true;
-                    mappingClass = ReflectionUtils.getActualType((ParameterizedType) type).get(0);
-                } else if (type instanceof Class) {
-                    if (((Class) type).isArray()) {
-                        multiQuery = true;
-                        mappingClass = ((Class) type).getComponentType();
-                    } else {
-                        mappingClass = (Class<?>) type;
-                    }
-                }
-            }
+    private Class<?> findClass(String className) {
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 
     /**
-     * Get parameter's name by mybatis rule
+     * Generate sql from provider for mapper method
      *
-     * <p>
-     * Mybatis will wrap parameter by parameter's name before execute statement.
-     * You can find how mybatis get parameter in {@link org.apache.ibatis.reflection.ParamNameResolver} and {@link org.apache.ibatis.session.defaults.DefaultSqlSession#wrapCollection(Object}
-     * </p>
-     *
-     * @param parameter
+     * @param paramObject
      * @return
+     * @throws Throwable
      */
-    private String paramName(Parameter parameter, int index) {
-        String paramName;
+    private String generateSqlFromProvider(Object paramObject) throws Throwable {
+        Object result;
 
-        if (parameter.isAnnotationPresent(Param.class)) {
-            paramName = parameter.getAnnotation(Param.class).value();
+        Object[] args = convertSqlParamsToArgs(paramObject);
+
+        if (providerClass.isInterface()) {
+            result = MethodHandles.spreadInvoker(methodHandle.type(), 0).invokeExact(methodHandle, args);
         } else {
-            paramName = parameter.getName();
+            result = methodHandle.invokeWithArguments(args);
         }
 
-        if (this.mapperMethodParams.length == 1 && !this.hasParamAnnotation) {
-            Class<?> type = this.mapperMethodParams[0].getType();
-
-            if (List.class.isAssignableFrom(type)) {
-                paramName = "list";
-            } else if (Collection.class.isAssignableFrom(type)) {
-                paramName = "collection";
-            } else if (type.isArray()) {
-                paramName = "array";
-            }
-        }
-
-        if (paramName == null) {
-            return GENERIC_NAME_PREFIX + index;
-        }
-
-        return paramName;
+        return result == null ? null : result.toString();
     }
 
     /**
@@ -424,8 +470,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @param param
      * @return
      */
-    private Object[] convertSqlParamToArgs(Object param) {
-        int len = this.mapperMethodParams.length;
+    private Object[] convertSqlParamsToArgs(Object param) {
+        int len = this.parameters.length;
 
         Object[] args = len == 0 || param == null ? null : new Object[len];
 
@@ -438,19 +484,5 @@ public class DefaultSqlGenerator implements SqlGenerator {
         }
 
         return args;
-    }
-
-    private String getSqlFromProvider(Object paramObject) throws Throwable {
-        Object result;
-
-        Object[] args = convertSqlParamToArgs(paramObject);
-
-        if (providerClass.isInterface()) {
-            result = MethodHandles.spreadInvoker(methodHandle.type(), 0).invokeExact(methodHandle, args);
-        } else {
-            result = methodHandle.invokeWithArguments(args);
-        }
-
-        return result == null ? null : result.toString();
     }
 }

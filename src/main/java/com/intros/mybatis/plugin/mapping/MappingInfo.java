@@ -1,32 +1,26 @@
 package com.intros.mybatis.plugin.mapping;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.util.Arrays;
-import java.util.HashMap;
+import com.intros.mybatis.plugin.annotation.Column;
+import com.intros.mybatis.plugin.annotation.Table;
+import org.apache.ibatis.exceptions.ExceptionFactory;
+
+import java.lang.reflect.Field;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author teddy
  */
 public class MappingInfo {
+
+    private static final Class<Table> TABLE_CLASS = Table.class;
+
+    private static final Class<Column> COLUMN_CLASS = Column.class;
+
     /**
      * mapping class
      */
     private Class<?> clazz;
-
-    /**
-     *
-     */
-    private BeanInfo beanInfo;
-
-    /**
-     *
-     */
-    private Map<String, PropertyDescriptor> propertyDescriptors = new HashMap<>();
 
     /**
      * table name
@@ -38,43 +32,37 @@ public class MappingInfo {
      */
     private List<ColumnInfo> columnInfos;
 
-    public Class<?> clazz() {
-        return clazz;
+    public MappingInfo(Class<?> clazz) {
+        this.clazz = clazz;
+
+        if (clazz.isAnnotationPresent(TABLE_CLASS)) {
+            this.table = clazz.getAnnotation(TABLE_CLASS).name();
+        } else {
+            throw ExceptionFactory.wrapException("Invalid mapping class without table annotation on it!",
+                    new IllegalStateException());
+        }
+
+        this.columnInfos = new LinkedList<>();
+
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(COLUMN_CLASS)) {
+                Column column = field.getAnnotation(COLUMN_CLASS);
+
+                columnInfos.add(new ColumnInfo().column(column.name()).prop(field.getName()).insert(column.insert()).update(column.update())
+                        .test(column.test()));
+            }
+        }
     }
 
-    public MappingInfo clazz(Class<?> clazz) {
-        this.clazz = clazz;
-        try {
-            this.beanInfo = Introspector.getBeanInfo(clazz);
-            Arrays.stream(this.beanInfo.getPropertyDescriptors()).forEach(propertyDescriptor -> propertyDescriptors.put(propertyDescriptor.getName(), propertyDescriptor));
-        } catch (IntrospectionException e) {
-            // not a java bean
-        }
-        return this;
+    public Class<?> clazz() {
+        return clazz;
     }
 
     public String table() {
         return table;
     }
 
-    public MappingInfo table(String table) {
-        this.table = table;
-        return this;
-    }
-
     public List<ColumnInfo> columnInfos() {
         return columnInfos;
-    }
-
-    public MappingInfo columnInfos(List<ColumnInfo> columnInfos) {
-        this.columnInfos = columnInfos;
-
-        for (ColumnInfo columnInfo : columnInfos) {
-            if (this.beanInfo != null) {
-                columnInfo.propertyDescriptor(propertyDescriptors.get(columnInfo.prop()));
-            }
-        }
-
-        return this;
     }
 }

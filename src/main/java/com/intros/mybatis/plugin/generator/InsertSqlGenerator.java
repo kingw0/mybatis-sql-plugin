@@ -3,44 +3,43 @@ package com.intros.mybatis.plugin.generator;
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.sql.Insert;
-import com.intros.mybatis.plugin.sql.Table;
+import com.intros.mybatis.plugin.sql.expression.Expression;
+import com.intros.mybatis.plugin.utils.ParameterUtils;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.Table.table;
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProps;
-import static com.intros.mybatis.plugin.sql.expression.Binder.bindMultiProps;
-import static com.intros.mybatis.plugin.utils.ParameterUtils.sizeOfParam;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
+import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
 
 public class InsertSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertSqlGenerator.class);
 
-    private Table table;
+    private Options options;
 
-    private List<ColumnInfo> columnInfos;
+    private Collection<ColumnInfo> columnInfos;
 
-    private String[] columns;
-
-    private String[] props;
+    private Map<String, Boolean> cachedCanInsert;
 
     public InsertSqlGenerator(ProviderContext context, SqlType sqlType) {
         super(context, sqlType);
 
         if (!hasProvider) {
-            table = table(this.mappingClass);
-            columnInfos = this.mappingInfo.columnInfos();
+            // Get options annotation for insert sql statement
+            if (context.getMapperMethod().isAnnotationPresent(Options.class)) {
+                options = context.getMapperMethod().getAnnotation(Options.class);
+            }
 
-            List<ColumnInfo> filteredColumnInfos = this.columnInfos.stream().filter(this::canInsert).collect(Collectors.toList());
+            this.columnInfos = this.columns.values();
 
-            int filteredSize = filteredColumnInfos.size();
+            cachedCanInsert = new HashMap<>();
 
-            this.columns = filteredColumnInfos.stream().map(ColumnInfo::column).collect(Collectors.toList()).toArray(new String[filteredSize]);
-
-            this.props = filteredColumnInfos.stream().map(ColumnInfo::prop).collect(Collectors.toList()).toArray(new String[filteredSize]);
+            this.columnInfos.forEach(columnInfo -> {
+                cachedCanInsert.put(columnInfo.column(), canInsert(columnInfo));
+            });
         }
     }
 
@@ -63,20 +62,59 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
 
         Insert insert = new Insert(this.table);
 
-        String paramName = multiQuery ? this.paramNames[0] : this.hasParamAnnotation ? this.paramNames[0] : null;
-
-        insert.columns(this.columns);
 
         if (multiQuery) {
-            int index = 0, size = sizeOfParam(getArgByParamName(paramObject, this.paramNames[0]));
+            String paramName = this.paramNames[this.mappingParamIndex];
 
-            insert.values(bindIndexProps(paramName, index++, this.props));
+            Object paramValue = paramValue(paramObject, paramName);
 
-            for (; index < size; index++) {
-                insert.append(bindIndexProps(paramName, index, this.props));
+            Collection<Object> collection = ParameterUtils.collection(paramValue);
+
+            List<String> columnList = new LinkedList<>();
+
+            for (ColumnInfo columnInfo : this.columnInfos) {
+                if (cachedCanInsert.get(columnInfo.column())) {
+                    columnList.add(columnInfo.column());
+                }
+            }
+
+            insert.columns(columnList);
+
+            int index = 0, size = collection.size();
+
+            while (index < size) {
+                List<Expression<Insert>> expressions = new LinkedList<>();
+
+                for (ColumnInfo columnInfo : this.columnInfos) {
+                    if (cachedCanInsert.get(columnInfo.column())) {
+                        expressions.add(bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                    }
+                }
+
+                insert.values(expressions);
+
+                index++;
             }
         } else {
-            insert.values(bindMultiProps(paramName, this.props));
+            List<String> columnList = new LinkedList<>();
+
+            for (ColumnInfo columnInfo : this.columnInfos) {
+                if (shouldInsert(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+                    columnList.add(columnInfo.column());
+                }
+            }
+
+            insert.columns(columnList);
+
+            List<Expression<Insert>> expressions = new LinkedList<>();
+
+            for (ColumnInfo columnInfo : this.columnInfos) {
+                if (shouldInsert(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+                    expressions.add(bindProp(columnInfo.parameter(), columnInfo.prop()));
+                }
+            }
+
+            insert.values(expressions);
         }
 
         sql = insert.toString();
@@ -96,5 +134,9 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
         }
 
         return true;
+    }
+
+    private boolean shouldInsert(ColumnInfo columnInfo, Object root) {
+        return cachedCanInsert.get(columnInfo.column()) && test(columnInfo.test(), root);
     }
 }
