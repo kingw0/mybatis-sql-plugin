@@ -1,11 +1,13 @@
 package com.intros.mybatis.plugin.test.mapper;
 
 import com.intros.mybatis.plugin.annotation.Column;
-import com.intros.mybatis.plugin.annotation.Table;
+import com.intros.mybatis.plugin.annotation.Tab;
 
-@Table(name = "t_domain")
+@Tab(name = "t_domain")
 public class Domain {
-    @Column(name = "id_")
+    public static final String COLUMN_ID = "id_";
+
+    @Column(name = "id_", update = false)
     private long id;
 
     @Column(name = "name_")

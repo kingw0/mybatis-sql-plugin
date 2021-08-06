@@ -25,10 +25,43 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
+    public void testSelectByCriteriaExpression() {
+        execute(session -> {
+            List<Domain> res = session.getMapper(DomainMapper.class).selectByCriteriaExpression("teddy");
+            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(2, res.get(0).id());
+            Assert.assertEquals("andy", res.get(0).name());
+        });
+    }
+
+    @Test
+    public void testSelectOrder() {
+        execute(session -> {
+            List<Domain> res = session.getMapper(DomainMapper.class).selectOrder("teddy");
+            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals("teddy", res.get(0).name());
+        });
+    }
+
+    @Test
+    public void testSelectByCriteriaDynamic() {
+        execute(session -> {
+            List<Domain> res = session.getMapper(DomainMapper.class).selectByCriteriaDynamic("");
+            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals(2, res.get(1).id());
+            Assert.assertEquals("teddy", res.get(0).name());
+            Assert.assertEquals("andy", res.get(1).name());
+        });
+    }
+
+
+    @Test
     public void testSelectByProvider() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByProvider("teddy");
-            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(2, res.size());
             Assert.assertEquals(1, res.get(0).id());
             Assert.assertEquals("teddy", res.get(0).name());
         });
@@ -45,7 +78,7 @@ public class DomainMapperTest extends MapperTest {
             Domain domain = new Domain();
             domain.name("andy");
 
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).insert(domain);
 
             res = session.getMapper(DomainMapper.class).selectByInCriteria(Arrays.asList(1L, 2L));
             Assert.assertEquals(2, res.size());
@@ -66,7 +99,7 @@ public class DomainMapperTest extends MapperTest {
             Domain domain = new Domain();
             domain.name("andy");
 
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).insert(domain);
 
             res = session.getMapper(DomainMapper.class).selectByMultiCriteria("andy", Arrays.asList(1L, 2L));
             Assert.assertEquals(1, res.size());
@@ -77,13 +110,13 @@ public class DomainMapperTest extends MapperTest {
     public void testInsert() {
         execute(session -> {
             Domain domain = new Domain();
-            domain.name("andy");
+            domain.name("handsome");
 
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).insert(domain);
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
 
-            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(3, res.size());
             Assert.assertEquals(1, res.get(0).id());
             Assert.assertEquals("teddy", res.get(0).name());
             Assert.assertEquals(2, res.get(1).id());
@@ -96,13 +129,13 @@ public class DomainMapperTest extends MapperTest {
         execute(session -> {
             List<Domain> domains = Arrays.asList(new Domain().name("lily"), new Domain().name("andy"));
 
-            session.getMapper(DomainMapper.class).batchInsertListByKeyProperty(domains);
+            session.getMapper(DomainMapper.class).batchInsertList(domains);
 
-            session.getMapper(DomainMapper.class).batchInsertArrayByKeyProperty(new Domain().name("lily"), new Domain().name("andy"));
+            session.getMapper(DomainMapper.class).batchInsertArray(new Domain().name("lily"), new Domain().name("andy"));
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
 
-            Assert.assertEquals(5, res.size());
+            Assert.assertEquals(6, res.size());
         });
     }
 
@@ -110,17 +143,19 @@ public class DomainMapperTest extends MapperTest {
     public void testUpdate() {
         execute(session -> {
             Domain domain = new Domain().name("fred");
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).insert(domain);
 
             domain = new Domain().id(1L).name("andy");
-            session.getMapper(DomainMapper.class).updateByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).update(domain);
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
-            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(3, res.size());
             Assert.assertEquals(1, res.get(0).id());
             Assert.assertEquals("andy", res.get(0).name());
             Assert.assertEquals(2, res.get(1).id());
-            Assert.assertEquals("fred", res.get(1).name());
+            Assert.assertEquals("andy", res.get(1).name());
+            Assert.assertEquals(3, res.get(2).id());
+            Assert.assertEquals("fred", res.get(2).name());
         });
     }
 
@@ -129,13 +164,13 @@ public class DomainMapperTest extends MapperTest {
         execute(session -> {
             Domain domain = new Domain();
             domain.name("fred");
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
+            session.getMapper(DomainMapper.class).insert(domain);
 
             List<Domain> domains = Arrays.asList(new Domain().id(1L).name("andy_update"), new Domain().id(2L).name("fred_update"));
-            session.getMapper(DomainMapper.class).batchUpdateByKeyProperty(domains);
+            session.getMapper(DomainMapper.class).batchUpdate(domains);
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
-            Assert.assertEquals(2, res.size());
+            Assert.assertEquals(3, res.size());
             Assert.assertEquals(1, res.get(0).id());
             Assert.assertEquals("andy_update", res.get(0).name());
             Assert.assertEquals(2, res.get(1).id());
@@ -147,15 +182,14 @@ public class DomainMapperTest extends MapperTest {
     public void testDelete() {
         execute(session -> {
             Domain domain = new Domain();
-            domain.id(2L).name("fred");
+            domain.name("fred");
 
-            session.getMapper(DomainMapper.class).insertByKeyProperty(domain);
-
+            session.getMapper(DomainMapper.class).insert(domain);
             session.getMapper(DomainMapper.class).delete(1L);
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
 
-            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(2, res.size());
         });
     }
 

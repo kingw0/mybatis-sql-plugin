@@ -1,20 +1,10 @@
 package com.intros.mybatis.plugin.annotation;
 
-import com.intros.mybatis.plugin.sql.condition.generator.ConditionGenerator;
-import com.intros.mybatis.plugin.sql.condition.generator.Eq;
+import java.lang.annotation.*;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/**
- *
- */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.PARAMETER})
+@Target({ElementType.PARAMETER, ElementType.METHOD})
 public @interface Criteria {
-    String column();
-
-    Class<? extends ConditionGenerator> condition() default Eq.class;
+    Criterion[] value();
 }

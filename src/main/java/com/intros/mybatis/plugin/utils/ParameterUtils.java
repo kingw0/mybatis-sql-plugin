@@ -1,7 +1,9 @@
 package com.intros.mybatis.plugin.utils;
 
+import org.apache.ibatis.exceptions.ExceptionFactory;
+
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 public class ParameterUtils {
     /**
@@ -24,15 +26,18 @@ public class ParameterUtils {
         return size;
     }
 
-    public static Object specificValueInParam(Object param, int index) {
-        Class<?> type = param.getClass();
+    public static <T> Collection<T> collection(Object value) {
+        Collection<T> collection;
 
-        if (List.class.isAssignableFrom(type)) {
-            return ((List) param).get(index);
-        } else if (type.isArray()) {
-            return ((Object[]) param)[index];
+        if (Collection.class.isAssignableFrom(value.getClass())) {
+            collection = (Collection) value;
+        } else if (value.getClass().isArray()) {
+            collection = Arrays.asList((T[]) value);
+        } else {
+            throw ExceptionFactory.wrapException(String.format("Param %s is not collection or array.", value),
+                    new IllegalStateException());
         }
 
-        throw new IllegalArgumentException("UnSupport type of paramObj!");
+        return collection;
     }
 }
