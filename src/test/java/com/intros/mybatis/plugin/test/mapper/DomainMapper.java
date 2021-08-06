@@ -2,8 +2,9 @@ package com.intros.mybatis.plugin.test.mapper;
 
 import com.intros.mybatis.plugin.ResolvedSqlProvider;
 import com.intros.mybatis.plugin.annotation.Criterion;
+import com.intros.mybatis.plugin.annotation.Sort;
+import com.intros.mybatis.plugin.annotation.Tab;
 import com.intros.mybatis.plugin.sql.Select;
-import com.intros.mybatis.plugin.sql.Sorts;
 import com.intros.mybatis.plugin.sql.Table;
 import com.intros.mybatis.plugin.sql.condition.builder.In;
 import org.apache.ibatis.annotations.*;
@@ -29,7 +30,8 @@ public interface DomainMapper {
             In.class) List<Long> ids);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
-    List<Domain> selectOrder(String name, Sorts sorts);
+    @Sort(column = "id_")
+    List<Domain> selectOrder(String name);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
     List<Domain> selectByProvider(String name);
@@ -56,7 +58,7 @@ public interface DomainMapper {
     void batchUpdate(@Criterion(column = Domain.COLUMN_ID, prop = "id") List<Domain> domains);
 
     @DeleteProvider(type = ResolvedSqlProvider.class)
-    @com.intros.mybatis.plugin.annotation.Table(name = "t_domain")
+    @Tab(name = "t_domain")
     void delete(@Criterion(column = "id_") long id);
 
     /**

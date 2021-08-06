@@ -3,6 +3,7 @@ package com.intros.mybatis.plugin.generator;
 import com.intros.mybatis.plugin.SqlType;
 import com.intros.mybatis.plugin.sql.Delete;
 import com.intros.mybatis.plugin.sql.condition.Condition;
+import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,8 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
         Delete delete = new Delete(this.table);
 
         Optional<Condition> condition = this.criteria.values().stream()
-                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
+                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
                 .filter(Objects::nonNull)
                 .reduce((c1, c2) -> c1.and(c2));
 

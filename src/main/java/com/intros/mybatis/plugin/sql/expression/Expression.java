@@ -19,6 +19,20 @@ import static com.intros.mybatis.plugin.sql.expression.Literal.text;
  */
 public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
     /**
+     * @param expression
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Expression<S> expression(String expression) {
+        return new Expression<S>() {
+            @Override
+            public S write(S sql) {
+                return sql.append(expression);
+            }
+        };
+    }
+
+    /**
      * Expression surround by bracket
      *
      * @param expression

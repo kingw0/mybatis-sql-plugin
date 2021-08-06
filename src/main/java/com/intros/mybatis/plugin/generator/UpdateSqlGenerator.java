@@ -7,6 +7,7 @@ import com.intros.mybatis.plugin.sql.Update;
 import com.intros.mybatis.plugin.sql.condition.Condition;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.utils.ParameterUtils;
+import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.util.Optional;
 
 import static com.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
 import static com.intros.mybatis.plugin.sql.expression.Binder.bindProp;
+import static com.intros.mybatis.plugin.sql.expression.Expression.expression;
 
 /**
  * Generate update sql.
@@ -60,7 +62,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private void multiUpdateColumns(Update update, Object element, int index, Collection<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, element)) {
-                update.set(columnInfo.column(), bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
+                        ? expression(columnInfo.expression()) : bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
             }
         }
     }
@@ -68,7 +71,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private void updateColumns(Update update, Object paramObject, Collection<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
-                update.set(columnInfo.column(), bindProp(columnInfo.parameter(), columnInfo.prop()));
+                update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
+                        ? expression(columnInfo.expression()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
             }
         }
     }
@@ -87,7 +91,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private void buildConditions(Update update, Object paramObject, Collection<CriterionInfo> criterionInfos) {
         Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
+                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
                 .filter(Objects::nonNull)
                 .reduce((c1, c2) -> c1.and(c2));
 

@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 @Target({ElementType.PARAMETER, ElementType.METHOD})
 @Repeatable(Criteria.class)
 public @interface Criterion {
-    String column();
+    String column() default "";
 
     String parameter() default "";
 

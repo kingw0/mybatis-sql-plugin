@@ -156,6 +156,14 @@ public class Select extends Sql<Select> {
     }
 
     /**
+     * @param orders
+     * @return
+     */
+    public Select order(List<Order<Select>> orders) {
+        return Joiner.join(this.append(KW_ORDER_BY), COMMA_WITH_SPACE, orders);
+    }
+
+    /**
      * where clause
      *
      * @param condition

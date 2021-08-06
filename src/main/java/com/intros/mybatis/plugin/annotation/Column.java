@@ -14,9 +14,11 @@ public @interface Column {
     /**
      * The column name in the table
      *
+     * <p>when used in select statement, this value can be null instead using expression as select column</p>
+     *
      * @return
      */
-    String name();
+    String name() default "";
 
     /**
      * When automatically generating insert or update statements,
@@ -57,4 +59,9 @@ public @interface Column {
      * @return
      */
     String test() default "";
+
+    /**
+     * @return
+     */
+    String expression() default "";
 }
