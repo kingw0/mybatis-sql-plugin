@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_DESC;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Expression.expression;
 
@@ -63,7 +62,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             if (mapperMethod.isAnnotationPresent(Sorts.class)) {
                 for (Sort sort : mapperMethod.getAnnotation(Sorts.class).value()) {
-                    if (KW_DESC.equals(sort.order())) {
+                    if ("desc".equalsIgnoreCase(sort.order())) {
                         orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
                                 ? expression(sort.expression()) : column(sort.column())));
                     } else {
@@ -76,7 +75,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             } else if (mapperMethod.isAnnotationPresent(Sort.class)) {
                 Sort sort = mapperMethod.getAnnotation(Sort.class);
 
-                if (KW_DESC.equalsIgnoreCase(sort.order())) {
+                if ("desc".equalsIgnoreCase(sort.order())) {
                     orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
                             ? expression(sort.expression()) : column(sort.column())));
                 } else {
@@ -100,7 +99,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         Select select = new Select().columns(this.columnList).from(this.table);
 
         Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
+                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
                 .filter(Objects::nonNull)
                 .reduce((c1, c2) -> c1.and(c2));
 

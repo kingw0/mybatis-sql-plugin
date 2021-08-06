@@ -29,8 +29,7 @@ import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
  * Default Sql Generator, one generator instance for one mapper method
  *
  * <p>
- * 1. generate sql from provider which can be a default interface method or a class static method first;
- * 2. if no provider,
+ *
  * </p>
  *
  * @author teddy
@@ -53,6 +52,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
+    private int expressionColumnSeq = 0;
+    private int expressionCriterionSeq = 0;
 
     /**
      * Constructor for generator
@@ -227,13 +228,13 @@ public class DefaultSqlGenerator implements SqlGenerator {
             if (parameter.isAnnotationPresent(Columns.class)) {
                 for (Column column : parameter.getAnnotation(Columns.class).value()) {
                     if (!this.columns.containsKey(column.name())) {
-                        this.columns.put(column.name(), columnInfo(paramNames[index], column.prop(), column));
+                        this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
                     }
                 }
             } else if (parameter.isAnnotationPresent(Column.class)) {
                 Column column = parameter.getAnnotation(Column.class);
                 if (!this.columns.containsKey(column.name())) {
-                    this.columns.put(column.name(), columnInfo(paramNames[index], column.prop(), column));
+                    this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
                 }
             }
             index++;
@@ -243,15 +244,19 @@ public class DefaultSqlGenerator implements SqlGenerator {
         if (mapperMethod.isAnnotationPresent(Columns.class)) {
             for (Column column : mapperMethod.getAnnotation(Columns.class).value()) {
                 if (!this.columns.containsKey(column.name())) {
-                    this.columns.put(column.name(), columnInfo(column.parameter(), column.prop(), column));
+                    this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
                 }
             }
         } else if (mapperMethod.isAnnotationPresent(Column.class)) {
             Column column = mapperMethod.getAnnotation(Column.class);
             if (!this.columns.containsKey(column.name())) {
-                this.columns.put(column.name(), columnInfo(column.parameter(), column.prop(), column));
+                this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
             }
         }
+    }
+
+    private String columnKey(Column column) {
+        return StringUtils.isBlank(column.name()) ? "column" + (++expressionColumnSeq) : column.name();
     }
 
     /**
@@ -279,24 +284,28 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
             if (parameter.isAnnotationPresent(Criteria.class)) {
                 for (Criterion criterion : parameter.getAnnotation(Criteria.class).value()) {
-                    this.criteria.put(criterion.column(), criterionInfo(paramName, criterion));
+                    this.criteria.put(criterionKey(criterion), criterionInfo(paramName, criterion));
                 }
             } else if (parameter.isAnnotationPresent(Criterion.class)) {
                 Criterion criterion = parameter.getAnnotation(Criterion.class);
-                this.criteria.put(criterion.column(), criterionInfo(paramName, criterion));
+                this.criteria.put(criterionKey(criterion), criterionInfo(paramName, criterion));
             }
         }
 
         if (mapperMethod.isAnnotationPresent(Criteria.class)) {
             for (Criterion criterion : mapperMethod.getAnnotation(Criteria.class).value()) {
                 if (!this.criteria.containsKey(criterion.column())) {
-                    this.criteria.put(criterion.column(), criterionInfo(criterion.parameter(), criterion));
+                    this.criteria.put(criterionKey(criterion), criterionInfo(criterion.parameter(), criterion));
                 }
             }
         } else if (mapperMethod.isAnnotationPresent(Criterion.class)) {
             Criterion criterion = mapperMethod.getAnnotation(Criterion.class);
-            this.criteria.put(criterion.column(), criterionInfo(criterion.parameter(), criterion));
+            this.criteria.put(criterionKey(criterion), criterionInfo(criterion.parameter(), criterion));
         }
+    }
+
+    private String criterionKey(Criterion criterion) {
+        return StringUtils.isBlank(criterion.column()) ? "criterion" + (++expressionCriterionSeq) : criterion.column();
     }
 
     /**

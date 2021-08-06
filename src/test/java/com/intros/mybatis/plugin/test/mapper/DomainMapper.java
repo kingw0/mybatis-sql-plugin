@@ -30,7 +30,7 @@ public interface DomainMapper {
             In.class) List<Long> ids);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
-    @Sort(column = "id_", order = "DESC")
+    @Sort(column = "id_")
     List<Domain> selectOrder(String name);
 
     @SelectProvider(type = ResolvedSqlProvider.class)

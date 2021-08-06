@@ -91,7 +91,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private void buildConditions(Update update, Object paramObject, Collection<CriterionInfo> criterionInfos) {
         Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, paramValue(paramObject, criterionInfo.parameter())))
+                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
+                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
                 .filter(Objects::nonNull)
                 .reduce((c1, c2) -> c1.and(c2));
 
