@@ -1,7 +1,7 @@
 package com.intros.mybatis.plugin.test;
 
 import com.intros.mybatis.plugin.annotation.Column;
-import com.intros.mybatis.plugin.annotation.Table;
+import com.intros.mybatis.plugin.annotation.Tab;
 import com.intros.mybatis.plugin.sql.Delete;
 import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.Update;
@@ -102,13 +102,13 @@ public class SQLTest {
         new Runner(opt).run();
     }
 
-    @Table(name = "t_parent_")
+    @Tab(name = "t_parent_")
     public static class Parent {
         @Column(name = "id_")
         private long id;
     }
 
-    @Table(name = "t_child_")
+    @Tab(name = "t_child_")
     public static class Child extends Parent {
         @Column(name = "name_")
         private String name;

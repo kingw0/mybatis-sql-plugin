@@ -18,7 +18,10 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
 
@@ -46,7 +49,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
     protected Parameter[] parameters;
     protected String[] paramNames;
     protected Map<String, ColumnInfo> columns = new LinkedHashMap<>();
-    protected Map<String, CriterionInfo> criteria = new HashMap<>();
+    protected Map<String, CriterionInfo> criteria = new LinkedHashMap<>();
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
@@ -177,18 +180,18 @@ public class DefaultSqlGenerator implements SqlGenerator {
         Class<?> mappingClass = findMappingClass(mapperMethod, sqlType, this.parameters);
 
         if (sqlType == SqlType.DELETE) {
-            if (mapperMethod.isAnnotationPresent(Table.class)) {
-                this.table = mapperMethod.getAnnotation(Table.class).name();
+            if (mapperMethod.isAnnotationPresent(Tab.class)) {
+                this.table = mapperMethod.getAnnotation(Tab.class).name();
             } else {
                 throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
                         "generate sql automatically!");
             }
         } else {
-            if (mapperMethod.isAnnotationPresent(Table.class)) {
-                this.table = mapperMethod.getAnnotation(Table.class).name();
+            if (mapperMethod.isAnnotationPresent(Tab.class)) {
+                this.table = mapperMethod.getAnnotation(Tab.class).name();
             } else {
-                if (mappingClass != null && mappingClass.isAnnotationPresent(Table.class)) {
-                    this.table = mappingClass.getAnnotation(Table.class).name();
+                if (mappingClass != null && mappingClass.isAnnotationPresent(Tab.class)) {
+                    this.table = mappingClass.getAnnotation(Tab.class).name();
                 } else {
                     throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
                             "generate sql automatically!");
@@ -227,6 +230,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
                         this.columns.put(column.name(), columnInfo(paramNames[index], column.prop(), column));
                     }
                 }
+            } else if (parameter.isAnnotationPresent(Column.class)) {
+                Column column = parameter.getAnnotation(Column.class);
+                if (!this.columns.containsKey(column.name())) {
+                    this.columns.put(column.name(), columnInfo(paramNames[index], column.prop(), column));
+                }
             }
             index++;
         }
@@ -238,6 +246,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
                     this.columns.put(column.name(), columnInfo(column.parameter(), column.prop(), column));
                 }
             }
+        } else if (mapperMethod.isAnnotationPresent(Column.class)) {
+            Column column = mapperMethod.getAnnotation(Column.class);
+            if (!this.columns.containsKey(column.name())) {
+                this.columns.put(column.name(), columnInfo(column.parameter(), column.prop(), column));
+            }
         }
     }
 
@@ -248,7 +261,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
      */
     private ColumnInfo columnInfo(String paramName, String prop, Column column) {
         return new ColumnInfo().column(column.name()).parameter(paramName).prop(prop).insert(column.insert()).update(column.update())
-                .test(column.test());
+                .test(column.test()).expression(column.expression());
     }
 
     /**
@@ -314,17 +327,17 @@ public class DefaultSqlGenerator implements SqlGenerator {
             for (Parameter parameter : parameters) {
                 Class<?> parameterType = actualType(parameter.getParameterizedType());
 
-                if (parameterType.isAnnotationPresent(Table.class) || Map.class.isAssignableFrom(parameterType)) {
+                if (parameterType.isAnnotationPresent(Tab.class) || Map.class.isAssignableFrom(parameterType)) {
                     this.mappingParamIndex = ++index;
                     mappingClass = parameterType;
                     break;
                 }
             }
 
-            Class<?> mappingParamType = parameters[this.mappingParamIndex].getType();
-
-            this.multiQuery =
-                    this.mappingParamIndex > -1 && (Collection.class.isAssignableFrom(mappingParamType) || mappingParamType.isArray());
+            if (this.mappingParamIndex > -1) {
+                Class<?> mappingParamType = parameters[this.mappingParamIndex].getType();
+                this.multiQuery = Collection.class.isAssignableFrom(mappingParamType) || mappingParamType.isArray();
+            }
         }
 
         return mappingClass;

@@ -1,33 +1,35 @@
 package com.intros.mybatis.plugin.generator;
 
 import com.intros.mybatis.plugin.SqlType;
+import com.intros.mybatis.plugin.annotation.Sort;
+import com.intros.mybatis.plugin.annotation.Sorts;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.CriterionInfo;
 import com.intros.mybatis.plugin.sql.Order;
 import com.intros.mybatis.plugin.sql.Pageable;
 import com.intros.mybatis.plugin.sql.Select;
-import com.intros.mybatis.plugin.sql.Sorts;
 import com.intros.mybatis.plugin.sql.condition.Condition;
-import com.intros.mybatis.plugin.sql.constants.Keywords;
-import com.intros.mybatis.plugin.sql.expression.Column;
+import com.intros.mybatis.plugin.sql.expression.Expression;
+import com.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.intros.mybatis.plugin.sql.Order.asc;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_DESC;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
-import static java.util.stream.Collectors.toList;
+import static com.intros.mybatis.plugin.sql.expression.Expression.expression;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
-    private List<Column<Select>> columnList;
+    private List<Expression<Select>> columnList;
     private Collection<CriterionInfo> criterionInfos;
     private String pageableParamName;
-    private String sortableParamName;
     private boolean pageable;
     private boolean sortable;
+    private List<Order<Select>> orders = new LinkedList<>();
 
     /**
      * Constructor for generator
@@ -42,7 +44,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             this.columnList = new LinkedList<>();
 
             for (ColumnInfo columnInfo : this.columns.values()) {
-                columnList.add(Column.column(columnInfo.column()).as(columnInfo.prop()));
+                columnList.add(StringUtils.isNotBlank(columnInfo.expression())
+                        ? expression(columnInfo.expression()) : column(columnInfo.column()).as(columnInfo.prop()));
             }
 
             this.criterionInfos = this.criteria.values();
@@ -52,14 +55,36 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
                 if (Pageable.class.isAssignableFrom(paramClass)) {
                     pageable = true;
                     pageableParamName = this.paramNames[i];
-                    continue;
-                }
-
-                if (Sorts.class.isAssignableFrom(paramClass)) {
-                    sortable = true;
-                    sortableParamName = this.paramNames[i];
                     break;
                 }
+            }
+
+            Method mapperMethod = context.getMapperMethod();
+
+            if (mapperMethod.isAnnotationPresent(Sorts.class)) {
+                for (Sort sort : mapperMethod.getAnnotation(Sorts.class).value()) {
+                    if (KW_DESC.equals(sort.order())) {
+                        orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
+                                ? expression(sort.expression()) : column(sort.column())));
+                    } else {
+                        orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
+                                ? expression(sort.expression()) : column(sort.column())));
+                    }
+                }
+
+                sortable = true;
+            } else if (mapperMethod.isAnnotationPresent(Sort.class)) {
+                Sort sort = mapperMethod.getAnnotation(Sort.class);
+
+                if (KW_DESC.equalsIgnoreCase(sort.order())) {
+                    orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
+                            ? expression(sort.expression()) : column(sort.column())));
+                } else {
+                    orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
+                            ? expression(sort.expression()) : column(sort.column())));
+                }
+
+                sortable = true;
             }
         }
     }
@@ -84,14 +109,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
         }
 
         if (sortable) {
-            Sorts sorts = (Sorts) paramValue(paramObject, sortableParamName);
-
-            if (sorts != null) {
-                List<Order> orders =
-                        sorts.sorts().stream().map(sort -> Keywords.KW_DESC.equals(sort.getOrder()) ? Order.desc(column(sort.getColumn())) : asc(column(sort.getColumn()))).collect(toList());
-
-                select.order(orders.toArray(new Order[0]));
-            }
+            select.order(orders);
         }
 
         if (pageable) {

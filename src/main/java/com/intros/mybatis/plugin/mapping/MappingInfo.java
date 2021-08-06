@@ -1,7 +1,7 @@
 package com.intros.mybatis.plugin.mapping;
 
 import com.intros.mybatis.plugin.annotation.Column;
-import com.intros.mybatis.plugin.annotation.Table;
+import com.intros.mybatis.plugin.annotation.Tab;
 import org.apache.ibatis.exceptions.ExceptionFactory;
 
 import java.lang.reflect.Field;
@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class MappingInfo {
 
-    private static final Class<Table> TABLE_CLASS = Table.class;
+    private static final Class<Tab> TABLE_CLASS = Tab.class;
 
     private static final Class<Column> COLUMN_CLASS = Column.class;
 

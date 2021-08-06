@@ -35,6 +35,11 @@ public class ColumnInfo {
      */
     private String test;
 
+    /**
+     *
+     */
+    private String expression;
+
     public String column() {
         return column;
     }
@@ -86,6 +91,15 @@ public class ColumnInfo {
 
     public ColumnInfo test(String test) {
         this.test = test;
+        return this;
+    }
+
+    public String expression() {
+        return expression;
+    }
+
+    public ColumnInfo expression(String expression) {
+        this.expression = expression;
         return this;
     }
 }

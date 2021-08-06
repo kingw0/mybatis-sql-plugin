@@ -1,6 +1,5 @@
 package com.intros.mybatis.plugin.test.mapper;
 
-import com.intros.mybatis.plugin.sql.Sorts;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Mode;
@@ -11,8 +10,6 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static com.intros.mybatis.plugin.sql.Sorts.Sort.ORDER_DESC;
 
 
 public class DomainMapperTest extends MapperTest {
@@ -40,11 +37,10 @@ public class DomainMapperTest extends MapperTest {
     @Test
     public void testSelectOrder() {
         execute(session -> {
-            List<Domain> res = session.getMapper(DomainMapper.class).selectOrder("teddy",
-                    new Sorts().add(new Sorts.Sort("id_", ORDER_DESC)));
+            List<Domain> res = session.getMapper(DomainMapper.class).selectOrder("teddy");
             Assert.assertEquals(2, res.size());
-            Assert.assertEquals(2, res.get(0).id());
-            Assert.assertEquals("andy", res.get(0).name());
+            Assert.assertEquals(1, res.get(0).id());
+            Assert.assertEquals("teddy", res.get(0).name());
         });
     }
 
