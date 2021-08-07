@@ -227,15 +227,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
         for (Parameter parameter : parameters) {
             if (parameter.isAnnotationPresent(Columns.class)) {
                 for (Column column : parameter.getAnnotation(Columns.class).value()) {
-                    if (!this.columns.containsKey(column.name())) {
-                        this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
-                    }
+                    this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
                 }
             } else if (parameter.isAnnotationPresent(Column.class)) {
                 Column column = parameter.getAnnotation(Column.class);
-                if (!this.columns.containsKey(column.name())) {
-                    this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
-                }
+                this.columns.put(columnKey(column), columnInfo(paramNames[index], column.prop(), column));
             }
             index++;
         }
@@ -243,15 +239,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
         // Get column info from mapper method annotation
         if (mapperMethod.isAnnotationPresent(Columns.class)) {
             for (Column column : mapperMethod.getAnnotation(Columns.class).value()) {
-                if (!this.columns.containsKey(column.name())) {
-                    this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
-                }
+                this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
             }
         } else if (mapperMethod.isAnnotationPresent(Column.class)) {
             Column column = mapperMethod.getAnnotation(Column.class);
-            if (!this.columns.containsKey(column.name())) {
-                this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
-            }
+            this.columns.put(columnKey(column), columnInfo(column.parameter(), column.prop(), column));
         }
     }
 
