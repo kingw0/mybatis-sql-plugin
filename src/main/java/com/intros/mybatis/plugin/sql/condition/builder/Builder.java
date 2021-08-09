@@ -16,10 +16,11 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
 public class Builder<S extends Sql<S>> {
     /**
      * @param criterionInfo
-     * @param root
+     * @param paramObject
+     * @param paramValue
      * @return
      */
-    public Condition<S> build(CriterionInfo criterionInfo, Object root) {
+    public Condition<S> build(CriterionInfo criterionInfo, Object paramObject, Object paramValue) {
         return column(criterionInfo.column()).eq(bindProp(criterionInfo.parameter(), criterionInfo.prop()));
     }
 
@@ -30,7 +31,7 @@ public class Builder<S extends Sql<S>> {
      * @param root
      * @return
      */
-    public Condition<S> build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object root) {
+    public Condition<S> build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object paramObject, Object paramValue) {
         return column(criterionInfo.column()).eq(bindIndexProp(criterionInfo.parameter(), indexInBatch, criterionInfo.prop()));
     }
 }
