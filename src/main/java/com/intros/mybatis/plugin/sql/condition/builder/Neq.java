@@ -8,12 +8,12 @@ import static com.intros.mybatis.plugin.sql.expression.Column.column;
 
 public class Neq extends Builder {
     @Override
-    public Condition build(CriterionInfo criterionInfo, Object root) {
+    public Condition build(CriterionInfo criterionInfo, Object paramObject, Object paramValue) {
         return column(criterionInfo.column()).neq(bindProp(criterionInfo.parameter(), criterionInfo.prop()));
     }
 
     @Override
-    public Condition build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object root) {
-        return super.build(criterionInfo, batchSize, indexInBatch, root);
+    public Condition build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object paramObject, Object paramValue) {
+        return super.build(criterionInfo, batchSize, indexInBatch, paramObject, paramValue);
     }
 }

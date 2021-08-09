@@ -16,7 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Expression.expression;
@@ -98,11 +101,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
         Select select = new Select().columns(this.columnList).from(this.table);
 
-        Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
-                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
-                .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2));
+        Optional<Condition> condition = conditions(this.criterionInfos, paramObject);
 
         if (condition.isPresent()) {
             select.where(condition.get());

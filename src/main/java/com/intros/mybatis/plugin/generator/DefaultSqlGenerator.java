@@ -18,10 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
 
@@ -127,12 +124,27 @@ public class DefaultSqlGenerator implements SqlGenerator {
         return null;
     }
 
-    protected Condition condition(CriterionInfo criterionInfo, Object root) {
-        return condition(criterionInfo, 0, -1, root);
+    protected Optional<Condition> conditions(Collection<CriterionInfo> criterionInfos, Object element, int size,
+                                             int index) {
+        return criterionInfos.stream()
+                .map(criterionInfo -> condition(criterionInfo, size, index, element))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2));
     }
 
-    protected Condition condition(CriterionInfo criterionInfo, int size, int index, Object root) {
-        if (!test(criterionInfo.test(), root)) {
+    protected Optional<Condition> conditions(Collection<CriterionInfo> criterionInfos, Object paramObject) {
+        return criterionInfos.stream()
+                .map(criterionInfo -> condition(criterionInfo, paramObject))
+                .filter(Objects::nonNull)
+                .reduce((c1, c2) -> c1.and(c2));
+    }
+
+    protected Condition condition(CriterionInfo criterionInfo, Object paramObject) {
+        return condition(criterionInfo, 0, -1, paramObject);
+    }
+
+    protected Condition condition(CriterionInfo criterionInfo, int size, int index, Object paramObject) {
+        if (!test(criterionInfo.test(), paramObject)) {
             return null;
         }
 
@@ -145,8 +157,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
             };
         }
 
-        return size > 0 && index > -1 ? criterionInfo.builder().build(criterionInfo, size, index, root) :
-                criterionInfo.builder().build(criterionInfo, root);
+        Object paramValue = StringUtils.isNotBlank(criterionInfo.parameter()) ? paramValue(paramObject,
+                criterionInfo.parameter()) : null;
+
+        return size > 0 && index > -1 ? criterionInfo.builder().build(criterionInfo, size, index, paramObject, paramValue) :
+                criterionInfo.builder().build(criterionInfo, paramObject, paramValue);
     }
 
     protected boolean test(String test, Object root) {
