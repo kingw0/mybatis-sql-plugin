@@ -115,7 +115,11 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             Pageable pageable = (Pageable) paramValue(paramObject, pageableParamName);
 
             if (pageable != null) {
-                select.limit(pageable.limit()).offset(pageable.offset());
+                select.limit(pageable.limit());
+
+                if (pageable.offset() > -1) {
+                    select.offset(pageable.offset());
+                }
             }
         }
 

@@ -1,13 +1,14 @@
 package com.intros.mybatis.plugin.sql.expression;
 
+import com.intros.mybatis.plugin.sql.Joiner;
+import com.intros.mybatis.plugin.sql.Select;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.SqlPart;
 import com.intros.mybatis.plugin.sql.condition.Between;
 import com.intros.mybatis.plugin.sql.condition.Comparison;
 import com.intros.mybatis.plugin.sql.condition.In;
 
-import static com.intros.mybatis.plugin.sql.constants.Keywords.CLOSE_BRACKET;
-import static com.intros.mybatis.plugin.sql.constants.Keywords.OPEN_BRACKET;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 import static com.intros.mybatis.plugin.sql.expression.Column.column;
 import static com.intros.mybatis.plugin.sql.expression.Literal.number;
 import static com.intros.mybatis.plugin.sql.expression.Literal.text;
@@ -33,6 +34,29 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
     }
 
     /**
+     * Function
+     *
+     * @param func
+     * @param expressions
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Expression<S> func(String func, Expression<S>... expressions) {
+        return new Expression<S>() {
+            @Override
+            public S write(S sql) {
+                sql.append(func).append(OPEN_BRACKET);
+
+                if (expressions != null && expressions.length > 0) {
+                    Joiner.join(sql, COMMA_WITH_SPACE, expressions);
+                }
+
+                return sql.append(CLOSE_BRACKET);
+            }
+        };
+    }
+
+    /**
      * Expression surround by bracket
      *
      * @param expression
@@ -44,6 +68,22 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
             @Override
             public S write(S sql) {
                 return expression.write(sql.append(OPEN_BRACKET)).append(CLOSE_BRACKET);
+            }
+        };
+    }
+
+    /**
+     * Select expression surround by bracket
+     *
+     * @param select
+     * @param <S>
+     * @return
+     */
+    public static <S extends Sql<S>> Expression<S> bracket(final Select select) {
+        return new Expression<S>() {
+            @Override
+            public S write(S sql) {
+                return sql.append(OPEN_BRACKET).append(select).append(CLOSE_BRACKET);
             }
         };
     }
