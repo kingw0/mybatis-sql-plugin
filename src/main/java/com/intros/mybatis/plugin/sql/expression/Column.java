@@ -1,22 +1,17 @@
 package com.intros.mybatis.plugin.sql.expression;
 
-import com.intros.mybatis.plugin.mapping.ColumnInfo;
-import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import com.intros.mybatis.plugin.sql.Sql;
 import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.utils.StringUtils;
 
-import java.util.List;
-import java.util.function.Function;
-
-import static com.intros.mybatis.plugin.sql.constants.Keywords.SPACE;
+import static com.intros.mybatis.plugin.sql.constants.Keywords.KW_AS;
 
 public class Column<S extends Sql<S>> extends Expression<S> {
-    private static final MappingInfoRegistry registry = MappingInfoRegistry.getInstance();
-
     private String table;
 
     private String column;
+
+    private Expression<S> columnExpr;
 
     private String alias;
 
@@ -25,15 +20,32 @@ public class Column<S extends Sql<S>> extends Expression<S> {
         this.column = column;
     }
 
+    protected Column(String table, Expression<S> columnExpr) {
+        this.table = table;
+        this.columnExpr = columnExpr;
+    }
+
     protected Column(String column) {
         this(null, column);
+    }
+
+    protected Column(Expression<S> columnExpr) {
+        this(null, columnExpr);
     }
 
     public static Column column(String column) {
         return new Column(column);
     }
 
+    public static Column column(Expression columnExpr) {
+        return new Column(columnExpr);
+    }
+
     public static Column column(String table, String column) {
+        return new Column(table, column);
+    }
+
+    public static Column column(String table, Expression column) {
         return new Column(table, column);
     }
 
@@ -48,10 +60,14 @@ public class Column<S extends Sql<S>> extends Expression<S> {
             sql.append(table).append(Keywords.DOT);
         }
 
-        sql.append(this.column);
+        if (columnExpr != null) {
+            columnExpr.write(sql);
+        } else {
+            sql.append(this.column);
+        }
 
         if (StringUtils.isNotBlank(alias)) {
-            sql.append(SPACE).append(alias);
+            sql.append(KW_AS).append(alias);
         }
 
         return sql;

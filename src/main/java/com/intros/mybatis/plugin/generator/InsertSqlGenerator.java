@@ -102,7 +102,7 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
             List<String> columnList = new LinkedList<>();
 
             for (ColumnInfo columnInfo : this.columnInfos) {
-                if (shouldInsert(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+                if (shouldInsert(columnInfo, paramObject)) {
                     columnList.add(columnInfo.column());
                 }
             }
@@ -112,7 +112,7 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
             List<Expression<Insert>> expressions = new LinkedList<>();
 
             for (ColumnInfo columnInfo : this.columnInfos) {
-                if (shouldInsert(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+                if (shouldInsert(columnInfo, paramObject)) {
                     expressions.add(StringUtils.isNotBlank(columnInfo.expression())
                             ? expression(columnInfo.expression()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
                 }

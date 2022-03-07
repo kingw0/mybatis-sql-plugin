@@ -3,7 +3,6 @@ package com.intros.mybatis.plugin.sql;
 import com.intros.mybatis.plugin.mapping.ColumnInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfo;
 import com.intros.mybatis.plugin.mapping.MappingInfoRegistry;
-import com.intros.mybatis.plugin.sql.constants.Keywords;
 import com.intros.mybatis.plugin.sql.expression.Column;
 import com.intros.mybatis.plugin.utils.StringUtils;
 
@@ -11,6 +10,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.intros.mybatis.plugin.sql.constants.Keywords.*;
 
 /**
  * @param <S>
@@ -22,12 +23,18 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
 
     private String table;
 
+    private Select select;
+
     private String alias;
 
     private List<Column<S>> columns;
 
     protected Table(String table) {
         this.table = table;
+    }
+
+    protected Table(Select select) {
+        this.select = select;
     }
 
     public Table(Class<?> mappingClass) {
@@ -40,6 +47,10 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
 
     public static Table table(String table) {
         return new Table(table);
+    }
+
+    public static Table table(Select select) {
+        return new Table(select);
     }
 
     public static Table table(Class<?> mappingClass) {
@@ -74,10 +85,16 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
 
     @Override
     public S write(S sql) {
-        if (!StringUtils.isBlank(this.alias)) {
-            return sql.append(this.table).append(Keywords.SPACE).append(this.alias);
+        if (select == null) {
+            sql.append(this.table);
         } else {
-            return sql.append(this.table);
+            sql.append(OPEN_BRACKET).append(select).append(CLOSE_BRACKET);
         }
+
+        if (!StringUtils.isBlank(this.alias)) {
+            sql.append(KW_AS).append(this.alias);
+        }
+
+        return sql;
     }
 }

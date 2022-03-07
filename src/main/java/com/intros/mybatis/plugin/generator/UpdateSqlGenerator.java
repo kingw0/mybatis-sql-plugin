@@ -70,7 +70,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private void updateColumns(Update update, Object paramObject, Collection<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
-            if (shouldUpdate(columnInfo, paramValue(paramObject, columnInfo.parameter()))) {
+            if (shouldUpdate(columnInfo, paramObject)) {
                 update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
                         ? expression(columnInfo.expression()) : bindProp(columnInfo.parameter(), columnInfo.prop()));
             }
@@ -88,19 +88,6 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
             update.where(condition.get());
         }
     }
-
-    private void buildConditions(Update update, Object paramObject, Collection<CriterionInfo> criterionInfos) {
-        Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, StringUtils.isNotBlank(criterionInfo.parameter())
-                        ? paramValue(paramObject, criterionInfo.parameter()) : null))
-                .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2));
-
-        if (condition.isPresent()) {
-            update.where(condition.get());
-        }
-    }
-
 
     private String update(ProviderContext context, Object paramObject) {
         LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
@@ -122,11 +109,23 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
             for (Object element : collection) {
                 if (index == 0) {
                     multiUpdateColumns(update, element, index, columnInfos);
-                    buildMultiConditions(update, element, size, index, criterionInfos);
+
+                    Optional<Condition> condition = conditions(criterionInfos, element, size, index);
+
+                    if (condition.isPresent()) {
+                        update.where(condition.get());
+                    }
                 } else {
                     additional = new Update(table);
+
                     multiUpdateColumns(additional, element, index, columnInfos);
-                    buildMultiConditions(additional, element, size, index, criterionInfos);
+
+                    Optional<Condition> condition = conditions(criterionInfos, element, size, index);
+
+                    if (condition.isPresent()) {
+                        additional.where(condition.get());
+                    }
+
                     update.append(Keywords.SEMICOLON_WITH_SPACE).append(additional);
                 }
 
@@ -134,7 +133,12 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
             }
         } else {
             updateColumns(update, paramObject, columnInfos);
-            buildConditions(update, paramObject, criterionInfos);
+
+            Optional<Condition> condition = conditions(criterionInfos, paramObject);
+
+            if (condition.isPresent()) {
+                update.where(condition.get());
+            }
         }
 
         String sql = update.toString();

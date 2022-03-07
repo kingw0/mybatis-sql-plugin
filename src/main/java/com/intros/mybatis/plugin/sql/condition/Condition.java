@@ -33,7 +33,7 @@ public abstract class Condition<S extends Sql<S>> extends SqlPart<S> {
      * @return
      */
     public Condition<S> and(Condition<S> cond) {
-        return Binary.and(this, cond);
+        return cond == null ? this : Binary.and(this, cond);
     }
 
     /**
@@ -41,7 +41,7 @@ public abstract class Condition<S extends Sql<S>> extends SqlPart<S> {
      * @return
      */
     public Condition<S> or(Condition<S> cond) {
-        return Binary.or(this, cond);
+        return cond == null ? this : Binary.or(this, cond);
     }
 
 }

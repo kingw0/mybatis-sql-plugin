@@ -7,6 +7,8 @@ public class Keywords {
 
     public static final String KW_PARAM_NAME_PREFIX2 = "${";
 
+    public static final String KW_AS = " AS ";
+
     public static final String KW_SELECT = "SELECT ";
 
     public static final String KW_UPDATE = "UPDATE ";

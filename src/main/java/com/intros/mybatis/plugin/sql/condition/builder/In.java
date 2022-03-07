@@ -11,13 +11,13 @@ import static com.intros.mybatis.plugin.utils.ParameterUtils.collection;
 
 public class In extends Builder {
     @Override
-    public Condition build(CriterionInfo criterionInfo, Object root) {
-        Collection<Object> collection = collection(root);
+    public Condition build(CriterionInfo criterionInfo, Object paramObject, Object paramValue) {
+        Collection<Object> collection = collection(paramValue);
         return column(criterionInfo.column()).in(bindIndices(criterionInfo.parameter(), collection.size()));
     }
 
     @Override
-    public Condition build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object root) {
-        return super.build(criterionInfo, batchSize, indexInBatch, root);
+    public Condition build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object paramObject, Object paramValue) {
+        return super.build(criterionInfo, batchSize, indexInBatch, paramObject, paramValue);
     }
 }
