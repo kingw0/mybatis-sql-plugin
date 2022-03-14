@@ -5,6 +5,24 @@ mybatis-sql-plugin is a mybatis plugin based on SQL provider mechanism.
 Use it you can generate sql statement for mapper method instead of writing sql in xml.
 At present, the plug-in only supports MySQL database
 
+## Install
+Maven(Inside the pom.xml)
+```xml
+        <dependency>
+            <groupId>cn.intros.mybatis</groupId>
+            <artifactId>mybatis-sql-plugin</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        
+        <repository>
+            <id>sonatype-snapshots</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+```
+
 ## How to use
 You need do to add Provider annotation on your mapper method, eg.
 ```java
