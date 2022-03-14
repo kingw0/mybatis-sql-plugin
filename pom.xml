@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.intros.mybatis</groupId>
+    <groupId>cn.intros.mybatis</groupId>
     <artifactId>mybatis-sql-plugin</artifactId>
     <version>1.0-SNAPSHOT</version>
 
@@ -81,14 +81,4 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>rdc-releases</id>
-            <url>https://repo.rdc.aliyun.com/repository/129856-release-fzWBO6/</url>
-        </repository>
-        <snapshotRepository>
-            <id>rdc-snapshots</id>
-            <url>https://repo.rdc.aliyun.com/repository/129856-snapshot-rRerrX/</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
