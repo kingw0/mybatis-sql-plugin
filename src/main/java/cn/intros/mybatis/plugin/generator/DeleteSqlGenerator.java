@@ -1,20 +1,16 @@
 package cn.intros.mybatis.plugin.generator;
 
 import cn.intros.mybatis.plugin.SqlType;
-import cn.intros.mybatis.plugin.mapping.CriterionInfo;
 import cn.intros.mybatis.plugin.sql.Delete;
 import cn.intros.mybatis.plugin.sql.condition.Condition;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Optional;
 
 public class DeleteSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSqlGenerator.class);
-
-    private Collection<CriterionInfo> criterionInfos;
 
     /**
      * Constructor for generator
@@ -24,10 +20,6 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
      */
     public DeleteSqlGenerator(ProviderContext context, SqlType sqlType) {
         super(context, sqlType);
-
-        if (!hasProvider) {
-            this.criterionInfos = this.criteria.values();
-        }
     }
 
     @Override
@@ -36,11 +28,12 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String buildDelete(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(),
+                context.getMapperType());
 
         Delete delete = new Delete(this.table);
 
-        Optional<Condition> condition = conditions(criterionInfos, paramObject);
+        Optional<Condition> condition = conditions(criteria, paramObject);
 
         if (condition.isPresent()) {
             delete.where(condition.get());
@@ -48,7 +41,8 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
 
         String sql = delete.toString();
 
-        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(),
+                context.getMapperType());
 
         return sql;
     }

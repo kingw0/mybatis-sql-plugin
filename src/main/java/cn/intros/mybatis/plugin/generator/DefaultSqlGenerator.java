@@ -44,7 +44,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
     protected Parameter[] parameters;
     protected String[] paramNames;
     protected Map<String, ColumnInfo> columns = new LinkedHashMap<>();
-    protected Map<String, CriterionInfo> criteria = new LinkedHashMap<>();
+    protected Collection<CriterionInfo> criteria = new LinkedList<>();
+    //    protected Map<String, CriterionInfo> criteria = new LinkedHashMap<>();
     private Class<?> providerClass;
     private Method providerMethod;
     private MethodHandle methodHandle;
@@ -125,17 +126,11 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
     protected Optional<Condition> conditions(Collection<CriterionInfo> criterionInfos, Object element, int size,
                                              int index) {
-        return criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, size, index, element))
-                .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2));
+        return criterionInfos.stream().map(criterionInfo -> condition(criterionInfo, size, index, element)).filter(Objects::nonNull).reduce((c1, c2) -> c1.and(c2));
     }
 
     protected Optional<Condition> conditions(Collection<CriterionInfo> criterionInfos, Object paramObject) {
-        return criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, paramObject))
-                .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2));
+        return criterionInfos.stream().map(criterionInfo -> condition(criterionInfo, paramObject)).filter(Objects::nonNull).reduce((c1, c2) -> c1.and(c2));
     }
 
     protected Condition condition(CriterionInfo criterionInfo, Object paramObject) {
@@ -159,8 +154,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
         Object paramValue = StringUtils.isNotBlank(criterionInfo.parameter()) ? paramValue(paramObject,
                 criterionInfo.parameter()) : null;
 
-        return size > 0 && index > -1 ? criterionInfo.builder().build(criterionInfo, size, index, paramObject, paramValue) :
-                criterionInfo.builder().build(criterionInfo, paramObject, paramValue);
+        return size > 0 && index > -1 ? criterionInfo.builder().build(criterionInfo, size, index, paramObject,
+                paramValue) : criterionInfo.builder().build(criterionInfo, paramObject, paramValue);
     }
 
     protected boolean test(String test, Object root) {
@@ -198,8 +193,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
             if (mapperMethod.isAnnotationPresent(Tab.class)) {
                 this.table = mapperMethod.getAnnotation(Tab.class).name();
             } else {
-                throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
-                        "generate sql automatically!");
+                throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " + "generate sql automatically!");
             }
         } else {
             if (mapperMethod.isAnnotationPresent(Tab.class)) {
@@ -208,8 +202,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 if (mappingClass != null && mappingClass.isAnnotationPresent(Tab.class)) {
                     this.table = mappingClass.getAnnotation(Tab.class).name();
                 } else {
-                    throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " when " +
-                            "generate sql automatically!");
+                    throw new IllegalStateException("Can't find table name for mapper method " + mapperMethod + " " + "when " + "generate sql automatically!");
                 }
             }
         }
@@ -229,8 +222,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
             for (Field field : mappingClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(Column.class)) {
                     Column column = field.getAnnotation(Column.class);
-                    this.columns.put(column.name(),
-                            columnInfo(this.mappingParamIndex > -1 ? paramNames[this.mappingParamIndex] : null, field.getName(), column));
+                    this.columns.put(column.name(), columnInfo(this.mappingParamIndex > -1 ?
+                            paramNames[this.mappingParamIndex] : null, field.getName(), column));
                 }
             }
         }
@@ -271,8 +264,7 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * @return
      */
     private ColumnInfo columnInfo(String paramName, String prop, Column column) {
-        return new ColumnInfo().column(column.name()).parameter(paramName).prop(prop).insert(column.insert()).update(column.update())
-                .test(column.test()).expression(column.expression());
+        return new ColumnInfo().column(column.name()).parameter(paramName).prop(prop).insert(column.insert()).update(column.update()).test(column.test()).expression(column.expression());
     }
 
     /**
@@ -290,23 +282,20 @@ public class DefaultSqlGenerator implements SqlGenerator {
 
             if (parameter.isAnnotationPresent(Criteria.class)) {
                 for (Criterion criterion : parameter.getAnnotation(Criteria.class).value()) {
-                    this.criteria.put(criterionKey(criterion), criterionInfo(paramName, criterion));
+                    this.criteria.add(criterionInfo(paramName, criterion));
                 }
             } else if (parameter.isAnnotationPresent(Criterion.class)) {
-                Criterion criterion = parameter.getAnnotation(Criterion.class);
-                this.criteria.put(criterionKey(criterion), criterionInfo(paramName, criterion));
+                this.criteria.add(criterionInfo(paramName, parameter.getAnnotation(Criterion.class)));
             }
         }
 
         if (mapperMethod.isAnnotationPresent(Criteria.class)) {
             for (Criterion criterion : mapperMethod.getAnnotation(Criteria.class).value()) {
-                if (!this.criteria.containsKey(criterion.column())) {
-                    this.criteria.put(criterionKey(criterion), criterionInfo(criterion.parameter(), criterion));
-                }
+                this.criteria.add(criterionInfo(criterion.parameter(), criterion));
             }
         } else if (mapperMethod.isAnnotationPresent(Criterion.class)) {
             Criterion criterion = mapperMethod.getAnnotation(Criterion.class);
-            this.criteria.put(criterionKey(criterion), criterionInfo(criterion.parameter(), criterion));
+            this.criteria.add(criterionInfo(criterion.parameter(), criterion));
         }
     }
 
@@ -381,7 +370,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * You can find how mybatis get parameter in {@link org.apache.ibatis.reflection.ParamNameResolver} and
      * org.apache.ibatis.session.defaults.DefaultSqlSession#wrapCollection(Object)
      * </p>
-     * TODO: 2021/8/4 skip special parameters (i.e. {@link org.apache.ibatis.session.RowBounds} or {@link org.apache.ibatis.session.ResultHandler}) ?
+     * TODO: 2021/8/4 skip special parameters (i.e. {@link org.apache.ibatis.session.RowBounds} or
+     * {@link org.apache.ibatis.session.ResultHandler}) ?
      *
      * @param parameter
      * @return
@@ -434,7 +424,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
         }
 
         if (providerClass == null) {
-            providerClass = mapperMethod.isAnnotationPresent(Provider.class) ? mapperMethod.getAnnotation(Provider.class).clazz() : null;
+            providerClass = mapperMethod.isAnnotationPresent(Provider.class) ?
+                    mapperMethod.getAnnotation(Provider.class).clazz() : null;
         }
 
         if (providerClass != null) {
@@ -442,14 +433,15 @@ public class DefaultSqlGenerator implements SqlGenerator {
                 providerMethod = providerClass.getMethod(mapperMethod.getName(), mapperMethod.getParameterTypes());
 
                 if (providerClass.isInterface() && providerMethod.isDefault()) {
-                    Object proxy = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class<?>[]{providerClass}, (p, m, args) -> null);
+                    Object proxy = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
+                            new Class<?>[]{providerClass}, (p, m, args) -> null);
                     methodHandle = ReflectionUtils.getDefaultMethodHandle(proxy, providerMethod);
                 } else if (Modifier.isStatic(providerMethod.getModifiers())) {
                     methodHandle = ReflectionUtils.getStaticMethodHandle(providerClass, providerMethod);
                 }
             } catch (ReflectiveOperationException e) {
                 // ignore
-//                LOGGER.warn("Failed to get provider method!", e);
+                //                LOGGER.warn("Failed to get provider method!", e);
             }
         }
     }
@@ -491,7 +483,8 @@ public class DefaultSqlGenerator implements SqlGenerator {
      * Convert sql param to mapper method args
      *
      * <p>
-     * Mybatis will use {@link org.apache.ibatis.reflection.ParamNameResolver#getNamedParams(Object[])} to convert mapper method to sql command param.
+     * Mybatis will use {@link org.apache.ibatis.reflection.ParamNameResolver#getNamedParams(Object[])} to convert
+     * mapper method to sql command param.
      * We use this method to convert sql command param back to args
      * </p>
      *

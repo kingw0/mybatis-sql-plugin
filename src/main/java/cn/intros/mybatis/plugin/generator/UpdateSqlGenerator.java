@@ -18,9 +18,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 
-import static cn.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
-import static cn.intros.mybatis.plugin.sql.expression.Binder.bindProp;
-
 /**
  * Generate update sql.
  *
@@ -38,8 +35,6 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private Collection<ColumnInfo> columnInfos;
 
-    private Collection<CriterionInfo> criterionInfos;
-
     /**
      * Constructor for generator
      *
@@ -51,7 +46,6 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
         if (!hasProvider) {
             this.columnInfos = this.columns.values();
-            this.criterionInfos = this.criteria.values();
         }
     }
 
@@ -64,7 +58,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, element)) {
                 update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) : Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                        ? Expression.expression(columnInfo.expression()) :
+                        Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
             }
         }
     }
@@ -73,7 +68,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, paramObject)) {
                 update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter(), columnInfo.prop()));
+                        ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter(),
+                        columnInfo.prop()));
             }
         }
     }
@@ -91,7 +87,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String update(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(),
+                context.getMapperType());
 
         Update update = new Update(table);
 
@@ -111,7 +108,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
                 if (index == 0) {
                     multiUpdateColumns(update, element, index, columnInfos);
 
-                    Optional<Condition> condition = conditions(criterionInfos, element, size, index);
+                    Optional<Condition> condition = conditions(criteria, element, size, index);
 
                     if (condition.isPresent()) {
                         update.where(condition.get());
@@ -121,7 +118,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
                     multiUpdateColumns(additional, element, index, columnInfos);
 
-                    Optional<Condition> condition = conditions(criterionInfos, element, size, index);
+                    Optional<Condition> condition = conditions(criteria, element, size, index);
 
                     if (condition.isPresent()) {
                         additional.where(condition.get());
@@ -135,7 +132,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         } else {
             updateColumns(update, paramObject, columnInfos);
 
-            Optional<Condition> condition = conditions(criterionInfos, paramObject);
+            Optional<Condition> condition = conditions(criteria, paramObject);
 
             if (condition.isPresent()) {
                 update.where(condition.get());
@@ -144,7 +141,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
         String sql = update.toString();
 
-        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(),
+                context.getMapperType());
 
         return sql;
     }

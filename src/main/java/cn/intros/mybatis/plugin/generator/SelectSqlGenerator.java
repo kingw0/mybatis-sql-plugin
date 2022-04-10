@@ -1,23 +1,21 @@
 package cn.intros.mybatis.plugin.generator;
 
-import cn.intros.mybatis.plugin.mapping.ColumnInfo;
-import cn.intros.mybatis.plugin.mapping.CriterionInfo;
-import cn.intros.mybatis.plugin.sql.condition.Condition;
-import cn.intros.mybatis.plugin.sql.expression.Column;
-import cn.intros.mybatis.plugin.sql.expression.Expression;
 import cn.intros.mybatis.plugin.SqlType;
 import cn.intros.mybatis.plugin.annotation.Sort;
 import cn.intros.mybatis.plugin.annotation.Sorts;
+import cn.intros.mybatis.plugin.mapping.ColumnInfo;
 import cn.intros.mybatis.plugin.sql.Order;
 import cn.intros.mybatis.plugin.sql.Pageable;
 import cn.intros.mybatis.plugin.sql.Select;
+import cn.intros.mybatis.plugin.sql.condition.Condition;
+import cn.intros.mybatis.plugin.sql.expression.Column;
+import cn.intros.mybatis.plugin.sql.expression.Expression;
 import cn.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +25,6 @@ import static cn.intros.mybatis.plugin.sql.expression.Column.column;
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
     private List<Expression<Select>> columnList;
-    private Collection<CriterionInfo> criterionInfos;
     private String pageableParamName;
     private boolean pageable;
     private boolean sortable;
@@ -47,10 +44,9 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             for (ColumnInfo columnInfo : this.columns.values()) {
                 columnList.add(StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) : Column.column(columnInfo.column()).as(columnInfo.prop()));
+                        ? Expression.expression(columnInfo.expression()) :
+                        Column.column(columnInfo.column()).as(columnInfo.prop()));
             }
-
-            this.criterionInfos = this.criteria.values();
 
             for (int i = 0, len = this.parameters.length; i < len; i++) {
                 Class<?> paramClass = this.parameters[i].getType();
@@ -97,11 +93,12 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String buildSelect(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(), context.getMapperType());
+        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(),
+                context.getMapperType());
 
         Select select = new Select().columns(this.columnList).from(this.table);
 
-        Optional<Condition> condition = conditions(this.criterionInfos, paramObject);
+        Optional<Condition> condition = conditions(this.criteria, paramObject);
 
         if (condition.isPresent()) {
             select.where(condition.get());
@@ -125,7 +122,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
         String sql = select.toString();
 
-        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql, context.getMapperMethod(), context.getMapperType(), paramObject);
+        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql,
+                context.getMapperMethod(), context.getMapperType(), paramObject);
 
         return sql;
     }
