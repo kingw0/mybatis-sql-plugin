@@ -87,9 +87,6 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String update(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate update sql for method [{}] of class [{}].", context.getMapperMethod(),
-                context.getMapperType());
-
         Update update = new Update(table);
 
         if (multiQuery) {
@@ -139,12 +136,7 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
             }
         }
 
-        String sql = update.toString();
-
-        LOGGER.debug("Generate update statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(),
-                context.getMapperType());
-
-        return sql;
+       return update.toString();
     }
 
     private boolean shouldUpdate(ColumnInfo columnInfo, Object root) {

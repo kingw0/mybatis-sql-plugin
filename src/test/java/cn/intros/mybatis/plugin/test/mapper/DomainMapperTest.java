@@ -68,6 +68,13 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
+    public void testSelectByInNames(){
+        execute(session->{
+            session.getMapper(DomainMapper.class).selectByInNames("a");
+        });
+    }
+
+    @Test
     public void testSelectByInCriteria() {
         execute(session -> {
             List<Domain> res = session.getMapper(DomainMapper.class).selectByInCriteria(Arrays.asList(1L));

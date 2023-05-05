@@ -14,9 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static cn.intros.mybatis.plugin.sql.expression.Binder.bindIndexProp;
-import static cn.intros.mybatis.plugin.sql.expression.Binder.bindProp;
-
 public class InsertSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertSqlGenerator.class);
 
@@ -58,13 +55,8 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
      * @return
      */
     private String insert(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate insert sql for method [{}] of class [{}].", context.getMapperMethod(), context.getMapperType());
-
-        String sql;
-
         Insert insert = new Insert(this.table);
-
-
+        
         if (multiQuery) {
             String paramName = this.paramNames[this.mappingParamIndex];
 
@@ -90,7 +82,8 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
                 for (ColumnInfo columnInfo : this.columnInfos) {
                     if (cachedCanInsert.get(columnInfo.column())) {
                         expressions.add(StringUtils.isNotBlank(columnInfo.expression())
-                                ? Expression.expression(columnInfo.expression()) : Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                                ? Expression.expression(columnInfo.expression()) :
+                                Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
                     }
                 }
 
@@ -114,18 +107,15 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
             for (ColumnInfo columnInfo : this.columnInfos) {
                 if (shouldInsert(columnInfo, paramObject)) {
                     expressions.add(StringUtils.isNotBlank(columnInfo.expression())
-                            ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter(), columnInfo.prop()));
+                            ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter()
+                            , columnInfo.prop()));
                 }
             }
 
             insert.values(expressions);
         }
 
-        sql = insert.toString();
-
-        LOGGER.debug("Generate insert statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(), context.getMapperType());
-
-        return sql;
+        return insert.toString();
     }
 
     private boolean canInsert(ColumnInfo columnInfo) {

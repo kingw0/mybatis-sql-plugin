@@ -3,8 +3,7 @@ package cn.intros.mybatis.plugin.sql.expression;
 import cn.intros.mybatis.plugin.sql.Sql;
 import cn.intros.mybatis.plugin.sql.constants.UnaryExpressionOp;
 
-import static cn.intros.mybatis.plugin.sql.constants.UnaryExpressionOp.IDENTITY;
-import static cn.intros.mybatis.plugin.sql.constants.UnaryExpressionOp.NEGATION;
+import static cn.intros.mybatis.plugin.sql.constants.UnaryExpressionOp.*;
 
 public class Unary<S extends Sql<S>> extends Expression<S> {
     private Expression<S> expr;
@@ -22,6 +21,10 @@ public class Unary<S extends Sql<S>> extends Expression<S> {
 
     public static <S extends Sql<S>> Unary<S> negation(Expression<S> expr) {
         return new Unary<>(expr, NEGATION);
+    }
+
+    public static <S extends Sql<S>> Unary<S> distinct(Expression<S> expr) {
+        return new Unary<>(expr, DISTINCT);
     }
 
     @Override

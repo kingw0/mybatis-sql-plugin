@@ -1,9 +1,9 @@
 package cn.intros.mybatis.plugin.sql.expression;
 
 import cn.intros.mybatis.plugin.sql.Sql;
+import cn.intros.mybatis.plugin.sql.constants.BindType;
 import cn.intros.mybatis.plugin.sql.constants.Keywords;
 import cn.intros.mybatis.plugin.utils.StringUtils;
-import cn.intros.mybatis.plugin.sql.constants.BindType;
 
 import static cn.intros.mybatis.plugin.sql.constants.BindType.BIND;
 
@@ -33,10 +33,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
 
     /**
      * @param params
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bind(String... params) {
+    public static Binder bind(String... params) {
         return new Binder<>(params);
     }
 
@@ -44,20 +43,18 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
     /**
      * @param bindType
      * @param params
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bind(BindType bindType, String... params) {
+    public static Binder bind(BindType bindType, String... params) {
         return new Binder<>(bindType, params);
     }
 
     /**
      * @param param
      * @param prop
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindProp(String param, String prop) {
+    public static Binder bindProp(String param, String prop) {
         return bindProp(param, BIND, prop);
     }
 
@@ -66,10 +63,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param bindType
      * @param prop
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindProp(String param, BindType bindType, String prop) {
+    public static Binder bindProp(String param, BindType bindType, String prop) {
         if (StringUtils.isBlank(param) && StringUtils.isBlank(prop)) {
             throw new IllegalArgumentException("param and prop can not be null at the same time!");
         }
@@ -79,20 +75,18 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
 
     /**
      * @param props
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindProps(String... props) {
+    public static Binder bindProps(String... props) {
         return bindProps(null, props);
     }
 
     /**
      * @param param
      * @param props
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindProps(String param, String... props) {
+    public static Binder bindProps(String param, String... props) {
         return StringUtils.isBlank(param) ? bind(props) : bindProps(param, BIND, props);
     }
 
@@ -100,20 +94,18 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param bindType
      * @param props
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindProps(String param, BindType bindType, String... props) {
+    public static Binder bindProps(String param, BindType bindType, String... props) {
         return new PropsBinder<>(param, bindType, props);
     }
 
     /**
      * @param param
      * @param index
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndex(String param, int index) {
+    public static Binder bindIndex(String param, int index) {
         return bindIndex(param, BIND, index);
     }
 
@@ -121,10 +113,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param bindType
      * @param index
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndex(String param, BindType bindType, int index) {
+    public static Binder bindIndex(String param, BindType bindType, int index) {
         return new IndexBinder<>(param, bindType, index);
     }
 
@@ -132,10 +123,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param index
      * @param prop
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndexProp(String param, int index, String prop) {
+    public static Binder bindIndexProp(String param, int index, String prop) {
         return bindIndexProp(param, BIND, index, prop);
     }
 
@@ -144,10 +134,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param bindType
      * @param index
      * @param prop
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndexProp(String param, BindType bindType, int index, String prop) {
+    public static Binder bindIndexProp(String param, BindType bindType, int index, String prop) {
         return StringUtils.isBlank(prop) ? new IndexBinder<>(param, bindType, index)
                 : new IndexPropBinder<>(param, bindType, index, prop);
     }
@@ -156,10 +145,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param index
      * @param props
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndexProps(String param, int index, String... props) {
+    public static Binder bindIndexProps(String param, int index, String... props) {
         return bindIndexProps(param, BIND, index, props);
     }
 
@@ -168,20 +156,19 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param bindType
      * @param index
      * @param props
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndexProps(String param, BindType bindType, int index, String... props) {
+    public static Binder bindIndexProps(String param, BindType bindType, int index,
+                                        String... props) {
         return new IndexPropsBinder<>(param, bindType, index, props);
     }
 
     /**
      * @param param
      * @param size
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndices(String param, int size) {
+    public static Binder bindIndices(String param, int size) {
         return bindIndices(param, BIND, size);
     }
 
@@ -189,10 +176,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param param
      * @param bindType
      * @param size
-     * @param <S>
      * @return
      */
-    public static <S extends Sql<S>> Binder<S> bindIndices(String param, BindType bindType, int size) {
+    public static Binder bindIndices(String param, BindType bindType, int size) {
         return new IndicesBinder<>(param, bindType, size);
     }
 
@@ -350,7 +336,8 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
 
         @Override
         public S write(S sql) {
-            final StringBuilder prefix = new StringBuilder(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2)
+            final StringBuilder prefix = new StringBuilder(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX :
+                    Keywords.KW_PARAM_NAME_PREFIX2)
                     .append(this.params[0]).append(Keywords.OPEN_SQUARE_BRACKET).append(this.index).append(Keywords.CLOSE_SQUARE_BRACKET).append(Keywords.DOT);
 
             int index = 0;

@@ -1,7 +1,7 @@
 package cn.intros.mybatis.plugin.sql.constants;
 
 public enum UnaryExpressionOp {
-    IDENTITY(" +"), NEGATION(" -");
+    IDENTITY(" +"), NEGATION(" -"), DISTINCT(" distinct ");
 
     private String op;
 

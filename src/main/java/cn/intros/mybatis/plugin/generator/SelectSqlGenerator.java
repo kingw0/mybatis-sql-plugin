@@ -93,9 +93,6 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String buildSelect(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate select sql for method[{}] of class[{}].", context.getMapperMethod(),
-                context.getMapperType());
-
         Select select = new Select().columns(this.columnList).from(this.table);
 
         Optional<Condition> condition = conditions(this.criteria, paramObject);
@@ -112,7 +109,9 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             Pageable pageable = (Pageable) paramValue(paramObject, pageableParamName);
 
             if (pageable != null) {
-                select.limit(pageable.limit());
+                if (pageable.limit() > -1) {
+                    select.limit(pageable.limit());
+                }
 
                 if (pageable.offset() > -1) {
                     select.offset(pageable.offset());
@@ -120,11 +119,6 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             }
         }
 
-        String sql = select.toString();
-
-        LOGGER.debug("Generate select statement[{}] for method[{}] of class[{}], params is [{}]!", sql,
-                context.getMapperMethod(), context.getMapperType(), paramObject);
-
-        return sql;
+        return select.toString();
     }
 }

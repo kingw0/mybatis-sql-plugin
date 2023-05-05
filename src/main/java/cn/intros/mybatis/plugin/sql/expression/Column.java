@@ -65,7 +65,7 @@ public class Column<S extends Sql<S>> extends Expression<S> {
         }
 
         if (StringUtils.isNotBlank(alias)) {
-            sql.append(Keywords.KW_AS).append(alias);
+            sql.append(Keywords.KW_AS).append('`').append(alias).append('`');
         }
 
         return sql;

@@ -4,6 +4,8 @@ import cn.intros.mybatis.plugin.sql.Sql;
 import cn.intros.mybatis.plugin.sql.constants.BinaryConditionOp;
 import cn.intros.mybatis.plugin.sql.expression.Expression;
 
+import static cn.intros.mybatis.plugin.sql.constants.BinaryConditionOp.*;
+
 public class Comparison<S extends Sql<S>> extends Condition<S> {
     private Expression<S> left;
 
@@ -18,31 +20,31 @@ public class Comparison<S extends Sql<S>> extends Condition<S> {
     }
 
     public static <S extends Sql<S>> Comparison eq(Expression left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.EQ);
+        return new Comparison(left, right, EQ);
     }
 
     public static <S extends Sql<S>> Comparison gt(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.GT);
+        return new Comparison(left, right, GT);
     }
 
     public static <S extends Sql<S>> Comparison gte(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.GTE);
+        return new Comparison(left, right, GTE);
     }
 
     public static <S extends Sql<S>> Comparison lt(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.LT);
+        return new Comparison(left, right, LT);
     }
 
     public static <S extends Sql<S>> Comparison lte(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.LTE);
+        return new Comparison(left, right, LTE);
     }
 
     public static <S extends Sql<S>> Comparison neq(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.NEQ);
+        return new Comparison(left, right, NEQ);
     }
 
     public static <S extends Sql<S>> Comparison like(Expression<S> left, Expression<S> right) {
-        return new Comparison(left, right, BinaryConditionOp.LIKE);
+        return new Comparison(left, right, LIKE);
     }
 
     @Override

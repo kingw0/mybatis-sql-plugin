@@ -28,9 +28,6 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String buildDelete(ProviderContext context, Object paramObject) {
-        LOGGER.debug("Begin to generate delete sql for method [{}] of class [{}].", context.getMapperMethod(),
-                context.getMapperType());
-
         Delete delete = new Delete(this.table);
 
         Optional<Condition> condition = conditions(criteria, paramObject);
@@ -39,11 +36,6 @@ public class DeleteSqlGenerator extends DefaultSqlGenerator {
             delete.where(condition.get());
         }
 
-        String sql = delete.toString();
-
-        LOGGER.debug("Generate delete statement[{}] for method [{}] of class [{}]!", sql, context.getMapperMethod(),
-                context.getMapperType());
-
-        return sql;
+        return delete.toString();
     }
 }

@@ -1,11 +1,11 @@
 package cn.intros.mybatis.plugin.test.mapper;
 
 import cn.intros.mybatis.plugin.ResolvedSqlProvider;
-import cn.intros.mybatis.plugin.sql.Table;
 import cn.intros.mybatis.plugin.annotation.Criterion;
 import cn.intros.mybatis.plugin.annotation.Sort;
 import cn.intros.mybatis.plugin.annotation.Tab;
 import cn.intros.mybatis.plugin.sql.Select;
+import cn.intros.mybatis.plugin.sql.Table;
 import cn.intros.mybatis.plugin.sql.condition.builder.In;
 import org.apache.ibatis.annotations.*;
 
@@ -24,6 +24,9 @@ public interface DomainMapper {
 
     @SelectProvider(type = ResolvedSqlProvider.class)
     List<Domain> selectByInCriteria(@Criterion(column = "id_", builder = In.class) List<Long> ids);
+
+    @SelectProvider(type = ResolvedSqlProvider.class)
+    List<Domain> selectByInNames(@Criterion(column = "name_", builder = In.class) String... names);
 
     @SelectProvider(type = ResolvedSqlProvider.class)
     List<Domain> selectByMultiCriteria(@Criterion(column = "name_") String name, @Criterion(column = "id_", builder =
@@ -69,7 +72,8 @@ public interface DomainMapper {
             Table DOMAIN_TABLE_A = Table.table(Domain.class).as("a");
             Table DOMAIN_TABLE_B = Table.table(Domain.class).as("b");
 
-            Select select = new Select().columns(DOMAIN_TABLE_A.columns()).from(DOMAIN_TABLE_A).join(DOMAIN_TABLE_B).on(DOMAIN_TABLE_A.column(Domain.COLUMN_ID).eq(DOMAIN_TABLE_B.column(Domain.COLUMN_ID)));
+            Select select = new Select().columns(DOMAIN_TABLE_A.columns()).from(DOMAIN_TABLE_A).join(DOMAIN_TABLE_B)
+                    .on(DOMAIN_TABLE_A.column(Domain.COLUMN_ID).eq(DOMAIN_TABLE_B.column(Domain.COLUMN_ID)));
 //            return new Select().columns(MappingUtils.columns(Test.class, true)).from("t_domain").where(column("name_").eq(bind("name")));
 //            return "select id_ id, name_ name from t_domain where name_ = #{name}";
             System.out.println(select);

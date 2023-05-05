@@ -67,7 +67,8 @@ public class ReflectionUtils {
         Class<?> declaringClass = method.getDeclaringClass();
         method.setAccessible(true);
 
-        return  MethodHandles.lookup().unreflectSpecial(method, declaringClass).bindTo(proxy).asType(MethodType.genericMethodType(method.getParameterCount(), false));
+        return  MethodHandles.lookup().unreflectSpecial(method, declaringClass).bindTo(proxy)
+                .asType(MethodType.genericMethodType(method.getParameterCount(), false));
     }
 
     /**
