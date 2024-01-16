@@ -1,15 +1,14 @@
 package cn.intros.mybatis.plugin.sql.expression;
 
-import cn.intros.mybatis.plugin.sql.condition.Between;
-import cn.intros.mybatis.plugin.sql.condition.In;
-import cn.intros.mybatis.plugin.sql.constants.Keywords;
 import cn.intros.mybatis.plugin.sql.Joiner;
 import cn.intros.mybatis.plugin.sql.Select;
 import cn.intros.mybatis.plugin.sql.Sql;
 import cn.intros.mybatis.plugin.sql.SqlPart;
+import cn.intros.mybatis.plugin.sql.condition.Between;
 import cn.intros.mybatis.plugin.sql.condition.Comparison;
+import cn.intros.mybatis.plugin.sql.condition.In;
+import cn.intros.mybatis.plugin.sql.constants.Keywords;
 
-import static cn.intros.mybatis.plugin.sql.expression.Column.column;
 import static cn.intros.mybatis.plugin.sql.expression.Literal.number;
 import static cn.intros.mybatis.plugin.sql.expression.Literal.text;
 
@@ -84,6 +83,15 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
             @Override
             public S write(S sql) {
                 return sql.append(Keywords.OPEN_BRACKET).append(select).append(Keywords.CLOSE_BRACKET);
+            }
+        };
+    }
+
+    public static <S extends Sql<S>> Expression<S> sql(final Select select) {
+        return new Expression<S>() {
+            @Override
+            public S write(S sql) {
+                return sql.append(select);
             }
         };
     }

@@ -64,4 +64,14 @@ public @interface Column {
      * @return
      */
     String expression() default "";
+
+    /**
+     * @return
+     */
+    boolean insertNull() default false;
+
+    /**
+     * @return
+     */
+    boolean updateNull() default false;
 }

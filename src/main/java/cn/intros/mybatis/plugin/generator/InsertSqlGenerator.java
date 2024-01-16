@@ -9,6 +9,7 @@ import cn.intros.mybatis.plugin.utils.ParameterUtils;
 import cn.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.builder.annotation.ProviderContext;
+import org.apache.ibatis.scripting.xmltags.OgnlCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
      */
     private String insert(ProviderContext context, Object paramObject) {
         Insert insert = new Insert(this.table);
-        
+
         if (multiQuery) {
             String paramName = this.paramNames[this.mappingParamIndex];
 
@@ -82,8 +83,8 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
                 for (ColumnInfo columnInfo : this.columnInfos) {
                     if (cachedCanInsert.get(columnInfo.column())) {
                         expressions.add(StringUtils.isNotBlank(columnInfo.expression())
-                                ? Expression.expression(columnInfo.expression()) :
-                                Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                                        ? Expression.expression(columnInfo.expression()) :
+                                        Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
                     }
                 }
 
@@ -107,8 +108,8 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
             for (ColumnInfo columnInfo : this.columnInfos) {
                 if (shouldInsert(columnInfo, paramObject)) {
                     expressions.add(StringUtils.isNotBlank(columnInfo.expression())
-                            ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter()
-                            , columnInfo.prop()));
+                                    ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter()
+                        , columnInfo.prop()));
                 }
             }
 
@@ -131,6 +132,23 @@ public class InsertSqlGenerator extends DefaultSqlGenerator {
     }
 
     private boolean shouldInsert(ColumnInfo columnInfo, Object root) {
-        return cachedCanInsert.get(columnInfo.column()) && test(columnInfo.test(), root);
+
+        if (!cachedCanInsert.get(columnInfo.column())) {
+            return false;
+        }
+
+        if (!columnInfo.insertNull()) {
+            String prop = columnInfo.parameter();
+
+            if (StringUtils.isBlank(prop)) {
+                prop = columnInfo.prop();
+            }
+
+            if (StringUtils.isNotBlank(prop) && OgnlCache.getValue(prop, root) == null) {
+                return false;
+            }
+        }
+
+        return test(columnInfo.test(), root);
     }
 }

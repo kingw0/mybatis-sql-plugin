@@ -1,15 +1,15 @@
 package cn.intros.mybatis.plugin.test;
 
-import cn.intros.mybatis.plugin.sql.Table;
-import cn.intros.mybatis.plugin.sql.condition.Condition;
-import cn.intros.mybatis.plugin.sql.condition.Exists;
-import cn.intros.mybatis.plugin.sql.expression.Column;
-import cn.intros.mybatis.plugin.sql.expression.Expression;
 import cn.intros.mybatis.plugin.annotation.Tab;
 import cn.intros.mybatis.plugin.sql.Delete;
 import cn.intros.mybatis.plugin.sql.Select;
+import cn.intros.mybatis.plugin.sql.Table;
 import cn.intros.mybatis.plugin.sql.Update;
+import cn.intros.mybatis.plugin.sql.condition.Condition;
+import cn.intros.mybatis.plugin.sql.condition.Exists;
 import cn.intros.mybatis.plugin.sql.expression.Binder;
+import cn.intros.mybatis.plugin.sql.expression.Column;
+import cn.intros.mybatis.plugin.sql.expression.Expression;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -21,11 +21,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-import static cn.intros.mybatis.plugin.sql.Table.table;
 import static cn.intros.mybatis.plugin.sql.expression.Binder.bind;
-import static cn.intros.mybatis.plugin.sql.expression.Binder.bindIndices;
-import static cn.intros.mybatis.plugin.sql.expression.Column.column;
-import static cn.intros.mybatis.plugin.sql.expression.Expression.bracket;
 import static cn.intros.mybatis.plugin.sql.expression.Literal.text;
 
 public class SQLTest {
@@ -49,19 +45,21 @@ public class SQLTest {
     @Test
     public void testSelect() {
         Select select = new Select().columns("id_", "name_", "age_").columns(Column.column("grade_").as("g"),
-                Expression.bracket(Column.column("age_").add(10).add(20)).mul(20)
-        ).from(Table.table("t_test").as("a"))
-                .where(Column.column("id_").eq(10)
-                        .and(Column.column("name_").like("%teddy%"))
-                        .and(Column.column("age_").between(10, 20))
-                        .and(Exists.exists(new Select().columns(text("X")).from("t_test").where(Column.column("name_").eq("teddy"))))
-                        .and(Column.column("grade_").in(10, 20, 30, 40))
-                );
+                                                                             Expression.bracket(Column.column("age_").add(10).add(20))
+                                                                                 .mul(20)
+            ).from(Table.table("t_test").as("a"))
+            .where(Column.column("id_").eq(10)
+                       .and(Column.column("name_").like("%teddy%"))
+                       .and(Column.column("age_").between(10, 20))
+                       .and(Exists.exists(new Select().columns(text("X")).from("t_test").where(Column.column("name_").eq("teddy"))))
+                       .and(Column.column("grade_").in(10, 20, 30, 40))
+            );
     }
 
     @Test
     public void testDelete() {
-        Delete delete = new Delete("t_test").where(Condition.bracket(Column.column("id_").eq(15).and(Column.column("name_").like("%teddy%"))).and(Column.column("grade_").lt(5)));
+        Delete delete = new Delete("t_test").where(
+            Condition.bracket(Column.column("id_").eq(15).and(Column.column("name_").like("%teddy%"))).and(Column.column("grade_").lt(5)));
     }
 
     @Test
@@ -74,32 +72,33 @@ public class SQLTest {
         Select select = new Select().columns("id_", "name_", "age_").columns(
                 Column.column("grade_").as("g"),
                 Expression.bracket(Column.column("age_").add(10).add(20)).mul(20)
-        ).from(Table.table("t_test").as("a"))
-                .where(Column.column("id_").eq(10)
-                                .and(Column.column("name_").like("%teddy%"))
-                                .and(Column.column("age_").between(10, 20))
+            ).from(Table.table("t_test").as("a"))
+            .where(Column.column("id_").eq(10)
+                       .and(Column.column("name_").like("%teddy%"))
+                       .and(Column.column("age_").between(10, 20))
 //                        .and(exists(new Select().columns(text("X")).from("t_test").where(column("name_").eq("teddy"))))
-                                .and(Column.column("grade_").in(10, 20, 30, 40))
-                );
+                       .and(Column.column("grade_").in(10, 20, 30, 40))
+            );
     }
 
     @Benchmark
     @Test
     public void deleteBenchmark() {
-        Delete delete = new Delete("t_test").where(Condition.bracket(Column.column("id_").eq(15).and(Column.column("name_").like("%teddy%"))).and(Column.column("grade_").lt(5)));
+        Delete delete = new Delete("t_test").where(
+            Condition.bracket(Column.column("id_").eq(15).and(Column.column("name_").like("%teddy%"))).and(Column.column("grade_").lt(5)));
     }
 
     public void runBenchmark() throws RunnerException {
         Options opt = new OptionsBuilder()
-                // 导入要测试的类
-                .include(SQLTest.class.getSimpleName())
-                // 预热
-                .warmupIterations(1)
-                // 度量1轮
-                .measurementIterations(1)
-                .mode(Mode.Throughput)
-                .forks(1)
-                .build();
+            // 导入要测试的类
+            .include(SQLTest.class.getSimpleName())
+            // 预热
+            .warmupIterations(1)
+            // 度量1轮
+            .measurementIterations(1)
+            .mode(Mode.Throughput)
+            .forks(1)
+            .build();
 
         new Runner(opt).run();
     }
@@ -117,5 +116,21 @@ public class SQLTest {
 
         @cn.intros.mybatis.plugin.annotation.Column(name = "age_")
         private long age;
+
+        public Child() {
+        }
+
+        public Child(String name, long age) {
+            this.name = name;
+            this.age = age;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public long age() {
+            return age;
+        }
     }
 }

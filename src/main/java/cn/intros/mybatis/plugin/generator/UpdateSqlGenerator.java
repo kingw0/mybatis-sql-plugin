@@ -11,6 +11,7 @@ import cn.intros.mybatis.plugin.sql.expression.Expression;
 import cn.intros.mybatis.plugin.utils.ParameterUtils;
 import cn.intros.mybatis.plugin.utils.StringUtils;
 import org.apache.ibatis.builder.annotation.ProviderContext;
+import org.apache.ibatis.scripting.xmltags.OgnlCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +57,10 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
 
     private void multiUpdateColumns(Update update, Object element, int index, Collection<ColumnInfo> columnInfos) {
         for (ColumnInfo columnInfo : columnInfos) {
-            if (shouldUpdate(columnInfo, element)) {
+            if (columnInfo.update()) {
                 update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) :
-                        Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
+                                                ? Expression.expression(columnInfo.expression()) :
+                                                Binder.bindIndexProp(columnInfo.parameter(), index, columnInfo.prop()));
             }
         }
     }
@@ -68,8 +69,8 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
         for (ColumnInfo columnInfo : columnInfos) {
             if (shouldUpdate(columnInfo, paramObject)) {
                 update.set(columnInfo.column(), StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter(),
-                        columnInfo.prop()));
+                                                ? Expression.expression(columnInfo.expression()) : Binder.bindProp(columnInfo.parameter(),
+                                                                                                                   columnInfo.prop()));
             }
         }
     }
@@ -77,9 +78,9 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
     private void buildMultiConditions(Update update, Object element, int size, int index,
                                       Collection<CriterionInfo> criterionInfos) {
         Optional<Condition> condition = criterionInfos.stream()
-                .map(criterionInfo -> condition(criterionInfo, size, index, element))
-                .filter(Objects::nonNull)
-                .reduce((c1, c2) -> c1.and(c2));
+            .map(criterionInfo -> condition(criterionInfo, size, index, element))
+            .filter(Objects::nonNull)
+            .reduce((c1, c2) -> c1.and(c2));
 
         if (condition.isPresent()) {
             update.where(condition.get());
@@ -136,10 +137,26 @@ public class UpdateSqlGenerator extends DefaultSqlGenerator {
             }
         }
 
-       return update.toString();
+        return update.toString();
     }
 
     private boolean shouldUpdate(ColumnInfo columnInfo, Object root) {
-        return columnInfo.update() && test(columnInfo.test(), root);
+        if (!columnInfo.update()) {
+            return false;
+        }
+
+        if (!columnInfo.updateNull()) {
+            String prop = columnInfo.parameter();
+
+            if (StringUtils.isBlank(prop)) {
+                prop = columnInfo.prop();
+            }
+
+            if (StringUtils.isNotBlank(prop) && OgnlCache.getValue(prop, root) == null) {
+                return false;
+            }
+        }
+
+        return test(columnInfo.test(), root);
     }
 }
