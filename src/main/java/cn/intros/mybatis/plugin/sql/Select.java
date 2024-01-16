@@ -136,6 +136,10 @@ public class Select extends Sql<Select> {
         return Joiner.join(this.append(Keywords.KW_GROUP_BY), Keywords.COMMA_WITH_SPACE, column);
     }
 
+    public Select group(Expression... expressions) {
+        return Joiner.join(this.append(Keywords.KW_GROUP_BY), Keywords.COMMA_WITH_SPACE, expressions);
+    }
+
     /**
      * having clause
      *

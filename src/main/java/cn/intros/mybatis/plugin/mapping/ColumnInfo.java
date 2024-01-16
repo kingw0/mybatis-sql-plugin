@@ -40,6 +40,10 @@ public class ColumnInfo {
      */
     private String expression;
 
+    private boolean insertNull;
+
+    private boolean updateNull;
+
     public String column() {
         return column;
     }
@@ -100,6 +104,24 @@ public class ColumnInfo {
 
     public ColumnInfo expression(String expression) {
         this.expression = expression;
+        return this;
+    }
+
+    public boolean insertNull() {
+        return insertNull;
+    }
+
+    public ColumnInfo insertNull(boolean insertNull) {
+        this.insertNull = insertNull;
+        return this;
+    }
+
+    public boolean updateNull() {
+        return updateNull;
+    }
+
+    public ColumnInfo updateNull(boolean updateNull) {
+        this.updateNull = updateNull;
         return this;
     }
 }

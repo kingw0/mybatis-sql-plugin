@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import static cn.intros.mybatis.plugin.sql.Table.table;
 import static cn.intros.mybatis.plugin.sql.expression.Column.column;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
@@ -44,8 +45,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             for (ColumnInfo columnInfo : this.columns.values()) {
                 columnList.add(StringUtils.isNotBlank(columnInfo.expression())
-                        ? Expression.expression(columnInfo.expression()) :
-                        Column.column(columnInfo.column()).as(columnInfo.prop()));
+                               ? Expression.expression(columnInfo.expression()) :
+                               Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
             }
 
             for (int i = 0, len = this.parameters.length; i < len; i++) {
@@ -63,10 +64,10 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
                 for (Sort sort : mapperMethod.getAnnotation(Sorts.class).value()) {
                     if ("desc".equalsIgnoreCase(sort.order())) {
                         orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
-                                ? Expression.expression(sort.expression()) : column(sort.column())));
+                                                      ? Expression.expression(sort.expression()) : column(sort.column())));
                     } else {
                         orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
-                                ? Expression.expression(sort.expression()) : column(sort.column())));
+                                                     ? Expression.expression(sort.expression()) : column(sort.column())));
                     }
                 }
 
@@ -76,10 +77,10 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
                 if ("desc".equalsIgnoreCase(sort.order())) {
                     orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
-                            ? Expression.expression(sort.expression()) : column(sort.column())));
+                                                  ? Expression.expression(sort.expression()) : column(sort.column())));
                 } else {
                     orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
-                            ? Expression.expression(sort.expression()) : column(sort.column())));
+                                                 ? Expression.expression(sort.expression()) : column(sort.column())));
                 }
 
                 sortable = true;
@@ -93,7 +94,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
     }
 
     private String buildSelect(ProviderContext context, Object paramObject) {
-        Select select = new Select().columns(this.columnList).from(this.table);
+        Select select = new Select().columns(this.columnList).from(table(this.table).as(this.alias));
 
         Optional<Condition> condition = conditions(this.criteria, paramObject);
 
