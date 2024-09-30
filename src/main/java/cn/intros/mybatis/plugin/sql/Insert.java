@@ -1,10 +1,13 @@
 package cn.intros.mybatis.plugin.sql;
 
+import cn.intros.mybatis.plugin.sql.constants.Keywords;
 import cn.intros.mybatis.plugin.sql.expression.Expression;
 
 import java.util.List;
 
 import static cn.intros.mybatis.plugin.sql.constants.Keywords.*;
+import static cn.intros.mybatis.plugin.sql.expression.Literal.number;
+import static cn.intros.mybatis.plugin.sql.expression.Literal.text;
 
 /**
  * @author teddy
@@ -30,6 +33,22 @@ public class Insert extends Sql<Insert> {
 
     public Insert columns(String... columns) {
         return Joiner.join(this, COMMA_WITH_SPACE, OPEN_BRACKET_WITH_SPACE, CLOSE_BRACKET, columns);
+    }
+
+    public Insert duplicate() {
+        return this.append(" ON DUPLICATE KEY UPDATE ");
+    }
+
+    public Insert set(String column, Number value) {
+        return set(column, number(value));
+    }
+
+    public Insert set(String column, String value) {
+        return set(column, text(value));
+    }
+
+    public Insert set(String column, Expression<Insert> value) {
+        return value.write(this.append(column).append(Keywords.KW_EQU_WITH_SPACE));
     }
 
     public Insert values(List<? extends Expression<Insert>> values) {

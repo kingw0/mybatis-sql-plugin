@@ -30,7 +30,6 @@ public class Builder<S extends Sql<S>> {
      * @param criterionInfo
      * @param batchSize
      * @param indexInBatch
-     * @param root
      * @return
      */
     public Condition<S> build(CriterionInfo criterionInfo, int batchSize, int indexInBatch, Object paramObject, Object paramValue) {
