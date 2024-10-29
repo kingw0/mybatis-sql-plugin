@@ -68,8 +68,8 @@ public class DomainMapperTest extends MapperTest {
     }
 
     @Test
-    public void testSelectByInNames(){
-        execute(session->{
+    public void testSelectByInNames() {
+        execute(session -> {
             session.getMapper(DomainMapper.class).selectByInNames("a");
         });
     }
@@ -138,7 +138,8 @@ public class DomainMapperTest extends MapperTest {
 
             session.getMapper(DomainMapper.class).batchInsertList(domains);
 
-            session.getMapper(DomainMapper.class).batchInsertArray(new Domain().name("lily"), new Domain().name("andy"));
+            session.getMapper(DomainMapper.class)
+                   .batchInsertArray(new Domain().name("lily"), new Domain().name("andy"));
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();
 
@@ -149,13 +150,15 @@ public class DomainMapperTest extends MapperTest {
     @Test
     public void testUpdate() {
         execute(session -> {
+            DomainMapper mapper = session.getMapper(DomainMapper.class);
+
             Domain domain = new Domain().name("fred");
-            session.getMapper(DomainMapper.class).insert(domain);
+            mapper.insert(domain);
 
             domain = new Domain().id(1L).name("andy");
-            session.getMapper(DomainMapper.class).update(domain);
+            mapper.update(domain);
 
-            List<Domain> res = session.getMapper(DomainMapper.class).select();
+            List<Domain> res = mapper.select();
             Assert.assertEquals(3, res.size());
             Assert.assertEquals(1, res.get(0).id());
             Assert.assertEquals("andy", res.get(0).name());
@@ -163,6 +166,13 @@ public class DomainMapperTest extends MapperTest {
             Assert.assertEquals("andy", res.get(1).name());
             Assert.assertEquals(3, res.get(2).id());
             Assert.assertEquals("fred", res.get(2).name());
+
+
+            session.getMapper(DomainMapper.class).update1(1L, ",hello");
+
+            res = mapper.select();
+
+            Assert.assertEquals("andy,hello", res.get(0).name());
         });
     }
 
@@ -173,7 +183,8 @@ public class DomainMapperTest extends MapperTest {
             domain.name("fred");
             session.getMapper(DomainMapper.class).insert(domain);
 
-            List<Domain> domains = Arrays.asList(new Domain().id(1L).name("andy_update"), new Domain().id(2L).name("fred_update"));
+            List<Domain> domains =
+                    Arrays.asList(new Domain().id(1L).name("andy_update"), new Domain().id(2L).name("fred_update"));
             session.getMapper(DomainMapper.class).batchUpdate(domains);
 
             List<Domain> res = session.getMapper(DomainMapper.class).select();

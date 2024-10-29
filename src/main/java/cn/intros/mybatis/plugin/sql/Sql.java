@@ -58,6 +58,10 @@ public class Sql<S extends Sql<S>> {
         return part.write((S) this);
     }
 
+    public S concat(Sql<S> sql, String sep) {
+        return sql.append(this.append(sep));
+    }
+
     @Override
     public String toString() {
         return buffer.toString();
