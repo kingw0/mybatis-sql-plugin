@@ -59,7 +59,7 @@ public class Sql<S extends Sql<S>> {
     }
 
     public S concat(Sql<S> sql, String sep) {
-        return sql.append(this.append(sep));
+        return this.append(sep).append(sql);
     }
 
     @Override
