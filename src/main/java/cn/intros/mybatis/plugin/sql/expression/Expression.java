@@ -370,6 +370,10 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
         return Between.between(this, number(lower), number(upper));
     }
 
+    public In<S> in(Select sql) {
+        return In.in(this, sql);
+    }
+
     /**
      * @param values
      * @return
