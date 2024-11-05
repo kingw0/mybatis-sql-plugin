@@ -70,7 +70,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
             throw new IllegalArgumentException("param and prop can not be null at the same time!");
         }
         return StringUtils.isBlank(param)
-                ? bind(prop) : (StringUtils.isBlank(prop) ? bind(param) : new PropBinder<>(param, bindType, prop));
+            ? bind(prop) : (StringUtils.isBlank(prop) ? bind(param) : new PropBinder<>(param, bindType, prop));
     }
 
     /**
@@ -78,7 +78,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static Binder bindProps(String... props) {
-        return bindProps(null, props);
+        return bindParamProps(null, props);
     }
 
     /**
@@ -86,8 +86,8 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param props
      * @return
      */
-    public static Binder bindProps(String param, String... props) {
-        return StringUtils.isBlank(param) ? bind(props) : bindProps(param, BIND, props);
+    public static Binder bindParamProps(String param, String... props) {
+        return StringUtils.isBlank(param) ? bind(props) : bindParamProps(param, BIND, props);
     }
 
     /**
@@ -96,7 +96,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @param props
      * @return
      */
-    public static Binder bindProps(String param, BindType bindType, String... props) {
+    public static Binder bindParamProps(String param, BindType bindType, String... props) {
         return new PropsBinder<>(param, bindType, props);
     }
 
@@ -138,7 +138,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      */
     public static Binder bindIndexProp(String param, BindType bindType, int index, String prop) {
         return StringUtils.isBlank(prop) ? new IndexBinder<>(param, bindType, index)
-                : new IndexPropBinder<>(param, bindType, index, prop);
+            : new IndexPropBinder<>(param, bindType, index, prop);
     }
 
     /**
@@ -159,7 +159,7 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
      * @return
      */
     public static Binder bindIndexProps(String param, BindType bindType, int index,
-                                        String... props) {
+        String... props) {
         return new IndexPropsBinder<>(param, bindType, index, props);
     }
 
@@ -191,7 +191,8 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         sql.append(prefix).append(this.params[index++]).append(Keywords.KW_PARAM_NAME_SUFFIX);
 
         for (; index < this.params.length; index++) {
-            sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(this.params[index]).append(Keywords.KW_PARAM_NAME_SUFFIX);
+            sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(this.params[index])
+                .append(Keywords.KW_PARAM_NAME_SUFFIX);
         }
 
         return sql;
@@ -213,8 +214,8 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             return sql.append(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2)
-                    .append(this.params[0]).append(Keywords.DOT).append(this.prop)
-                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
+                .append(this.params[0]).append(Keywords.DOT).append(this.prop)
+                .append(Keywords.KW_PARAM_NAME_SUFFIX);
         }
     }
 
@@ -234,14 +235,16 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             final String prefix =
-                    (this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2) + this.params[0] + Keywords.DOT;
+                (this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2) +
+                    this.params[0] + Keywords.DOT;
 
             int index = 0;
 
             sql.append(prefix).append(props[index++]).append(Keywords.KW_PARAM_NAME_SUFFIX);
 
             for (; index < props.length; index++) {
-                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(props[index]).append(Keywords.KW_PARAM_NAME_SUFFIX);
+                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(props[index])
+                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
             }
 
             return sql;
@@ -264,9 +267,9 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             return sql.append(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2)
-                    .append(this.params[0])
-                    .append(Keywords.OPEN_SQUARE_BRACKET).append(this.index).append(Keywords.CLOSE_SQUARE_BRACKET)
-                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
+                .append(this.params[0])
+                .append(Keywords.OPEN_SQUARE_BRACKET).append(this.index).append(Keywords.CLOSE_SQUARE_BRACKET)
+                .append(Keywords.KW_PARAM_NAME_SUFFIX);
         }
     }
 
@@ -281,14 +284,17 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             String prefix =
-                    (this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2) + this.params[0] + Keywords.OPEN_SQUARE_BRACKET;
+                (this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2) +
+                    this.params[0] + Keywords.OPEN_SQUARE_BRACKET;
 
             int index = 0;
 
-            sql.append(prefix).append(index++).append(Keywords.CLOSE_SQUARE_BRACKET).append(Keywords.KW_PARAM_NAME_SUFFIX);
+            sql.append(prefix).append(index++).append(Keywords.CLOSE_SQUARE_BRACKET)
+                .append(Keywords.KW_PARAM_NAME_SUFFIX);
 
             for (; index < this.size; index++) {
-                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(index).append(Keywords.CLOSE_SQUARE_BRACKET).append(Keywords.KW_PARAM_NAME_SUFFIX);
+                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(index).append(Keywords.CLOSE_SQUARE_BRACKET)
+                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
             }
 
             return sql;
@@ -314,9 +320,10 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             return sql.append(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX : Keywords.KW_PARAM_NAME_PREFIX2)
-                    .append(this.params[0]).append(Keywords.OPEN_SQUARE_BRACKET).append(this.index).append(Keywords.CLOSE_SQUARE_BRACKET)
-                    .append(Keywords.DOT).append(this.prop)
-                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
+                .append(this.params[0]).append(Keywords.OPEN_SQUARE_BRACKET).append(this.index)
+                .append(Keywords.CLOSE_SQUARE_BRACKET)
+                .append(Keywords.DOT).append(this.prop)
+                .append(Keywords.KW_PARAM_NAME_SUFFIX);
         }
     }
 
@@ -337,15 +344,17 @@ public class Binder<S extends Sql<S>> extends Expression<S> {
         @Override
         public S write(S sql) {
             final StringBuilder prefix = new StringBuilder(this.bindType == BIND ? Keywords.KW_PARAM_NAME_PREFIX :
-                    Keywords.KW_PARAM_NAME_PREFIX2)
-                    .append(this.params[0]).append(Keywords.OPEN_SQUARE_BRACKET).append(this.index).append(Keywords.CLOSE_SQUARE_BRACKET).append(Keywords.DOT);
+                Keywords.KW_PARAM_NAME_PREFIX2)
+                .append(this.params[0]).append(Keywords.OPEN_SQUARE_BRACKET).append(this.index)
+                .append(Keywords.CLOSE_SQUARE_BRACKET).append(Keywords.DOT);
 
             int index = 0;
 
             sql.append(prefix).append(props[index++]).append(Keywords.KW_PARAM_NAME_SUFFIX);
 
             for (int len = props.length; index < len; index++) {
-                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(props[index]).append(Keywords.KW_PARAM_NAME_SUFFIX);
+                sql.append(Keywords.COMMA_WITH_SPACE).append(prefix).append(props[index])
+                    .append(Keywords.KW_PARAM_NAME_SUFFIX);
             }
 
             return sql;
