@@ -9,6 +9,8 @@ import cn.intros.mybatis.plugin.sql.expression.Expression;
 import java.io.IOException;
 import java.util.List;
 
+import static cn.intros.mybatis.plugin.sql.constants.Keywords.*;
+
 /**
  * Select sql
  *
@@ -21,7 +23,7 @@ public class Select extends Sql<Select> {
     private boolean first = true;
 
     public Select() {
-        append(Keywords.KW_SELECT);
+        append(KW_SELECT);
     }
 
     /**
@@ -31,9 +33,9 @@ public class Select extends Sql<Select> {
     public Select columns(String... columns) {
         if (first) {
             first = false;
-            return Joiner.join(this, Keywords.COMMA_WITH_SPACE, columns);
+            return Joiner.join(this, COMMA_WITH_SPACE, columns);
         } else {
-            return Joiner.join(this.append(Keywords.COMMA_WITH_SPACE), Keywords.COMMA_WITH_SPACE, columns);
+            return Joiner.join(this.append(COMMA_WITH_SPACE), COMMA_WITH_SPACE, columns);
         }
     }
 
@@ -44,9 +46,9 @@ public class Select extends Sql<Select> {
     public Select columns(List<? extends Expression<Select>> expressions) {
         if (first) {
             first = false;
-            return Joiner.join(this, Keywords.COMMA_WITH_SPACE, expressions);
+            return Joiner.join(this, COMMA_WITH_SPACE, expressions);
         } else {
-            return Joiner.join(this.append(Keywords.COMMA_WITH_SPACE), Keywords.COMMA_WITH_SPACE, expressions);
+            return Joiner.join(this.append(COMMA_WITH_SPACE), COMMA_WITH_SPACE, expressions);
         }
     }
 
@@ -57,9 +59,9 @@ public class Select extends Sql<Select> {
     public Select columns(Expression<Select>... expressions) {
         if (first) {
             first = false;
-            return Joiner.join(this, Keywords.COMMA_WITH_SPACE, expressions);
+            return Joiner.join(this, COMMA_WITH_SPACE, expressions);
         } else {
-            return Joiner.join(this.append(Keywords.COMMA_WITH_SPACE), Keywords.COMMA_WITH_SPACE, expressions);
+            return Joiner.join(this.append(COMMA_WITH_SPACE), COMMA_WITH_SPACE, expressions);
         }
     }
 
@@ -68,7 +70,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select from(String table) {
-        return this.append(Keywords.KW_FROM).append(table);
+        return this.append(KW_FROM).append(table);
     }
 
     /**
@@ -76,7 +78,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select from(Table<Select> table) {
-        return table.write(this.append(Keywords.KW_FROM));
+        return table.write(this.append(KW_FROM));
     }
 
     /**
@@ -123,7 +125,7 @@ public class Select extends Sql<Select> {
      * @throws IOException
      */
     public Select on(Condition<Select> condition) {
-        return condition.write(this.append(Keywords.KW_ON));
+        return condition.write(this.append(KW_ON));
     }
 
     /**
@@ -133,11 +135,11 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select group(String... column) {
-        return Joiner.join(this.append(Keywords.KW_GROUP_BY), Keywords.COMMA_WITH_SPACE, column);
+        return Joiner.join(this.append(KW_GROUP_BY), COMMA_WITH_SPACE, column);
     }
 
     public Select group(Expression... expressions) {
-        return Joiner.join(this.append(Keywords.KW_GROUP_BY), Keywords.COMMA_WITH_SPACE, expressions);
+        return Joiner.join(this.append(KW_GROUP_BY), COMMA_WITH_SPACE, expressions);
     }
 
     /**
@@ -155,7 +157,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select order(Order<Select>... orders) {
-        return Joiner.join(this.append(Keywords.KW_ORDER_BY), Keywords.COMMA_WITH_SPACE, orders);
+        return Joiner.join(this.append(KW_ORDER_BY), COMMA_WITH_SPACE, orders);
     }
 
     /**
@@ -163,7 +165,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select order(List<Order<Select>> orders) {
-        return Joiner.join(this.append(Keywords.KW_ORDER_BY), Keywords.COMMA_WITH_SPACE, orders);
+        return Joiner.join(this.append(KW_ORDER_BY), COMMA_WITH_SPACE, orders);
     }
 
     /**
@@ -173,7 +175,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select where(Condition<Select> condition) {
-        return condition == null ? this : condition.write(this.append(Keywords.KW_WHERE));
+        return condition == null ? this : condition.write(this.append(KW_WHERE));
     }
 
     /**
@@ -181,7 +183,7 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select limit(int limit) {
-        return append(Keywords.KW_LIMIT).append(limit);
+        return append(KW_LIMIT).append(limit);
     }
 
     /**
@@ -189,6 +191,21 @@ public class Select extends Sql<Select> {
      * @return
      */
     public Select offset(int offset) {
-        return append(Keywords.KW_OFFSET).append(offset);
+        return append(KW_OFFSET).append(offset);
+    }
+
+    /**
+     * @return
+     */
+    public Select forUpdate() {
+        return append(KW_FOR_UPDATE);
+    }
+
+    public Select forShare() {
+        return append(KW_FOR_SHARE);
+    }
+
+    public Select nowait() {
+        return append(KW_NOWAIT);
     }
 }

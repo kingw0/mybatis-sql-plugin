@@ -1,6 +1,7 @@
 package cn.intros.mybatis.plugin.generator;
 
 import cn.intros.mybatis.plugin.SqlType;
+import cn.intros.mybatis.plugin.annotation.Lock;
 import cn.intros.mybatis.plugin.annotation.Sort;
 import cn.intros.mybatis.plugin.annotation.Sorts;
 import cn.intros.mybatis.plugin.mapping.ColumnInfo;
@@ -25,11 +26,18 @@ import static cn.intros.mybatis.plugin.sql.expression.Column.column;
 
 public class SelectSqlGenerator extends DefaultSqlGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectSqlGenerator.class);
+
     private List<Expression<Select>> columnList;
+
     private String pageableParamName;
+
     private boolean pageable;
+
     private boolean sortable;
+
     private List<Order<Select>> orders = new LinkedList<>();
+
+    private Lock lock;
 
     /**
      * Constructor for generator
@@ -45,8 +53,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             for (ColumnInfo columnInfo : this.columns.values()) {
                 columnList.add(StringUtils.isNotBlank(columnInfo.expression())
-                               ? Expression.expression(columnInfo.expression()) :
-                               Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
+                    ? Expression.expression(columnInfo.expression()) :
+                    Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
             }
 
             for (int i = 0, len = this.parameters.length; i < len; i++) {
@@ -64,10 +72,10 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
                 for (Sort sort : mapperMethod.getAnnotation(Sorts.class).value()) {
                     if ("desc".equalsIgnoreCase(sort.order())) {
                         orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
-                                                      ? Expression.expression(sort.expression()) : column(sort.column())));
+                            ? Expression.expression(sort.expression()) : column(sort.column())));
                     } else {
                         orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
-                                                     ? Expression.expression(sort.expression()) : column(sort.column())));
+                            ? Expression.expression(sort.expression()) : column(sort.column())));
                     }
                 }
 
@@ -77,14 +85,16 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
                 if ("desc".equalsIgnoreCase(sort.order())) {
                     orders.add(Order.<Select>desc(StringUtils.isNotBlank(sort.expression())
-                                                  ? Expression.expression(sort.expression()) : column(sort.column())));
+                        ? Expression.expression(sort.expression()) : column(sort.column())));
                 } else {
                     orders.add(Order.<Select>asc(StringUtils.isNotBlank(sort.expression())
-                                                 ? Expression.expression(sort.expression()) : column(sort.column())));
+                        ? Expression.expression(sort.expression()) : column(sort.column())));
                 }
 
                 sortable = true;
             }
+
+            lock = mapperMethod.getAnnotation(Lock.class);
         }
     }
 
@@ -117,6 +127,18 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
                 if (pageable.offset() > -1) {
                     select.offset(pageable.offset());
                 }
+            }
+        }
+
+        if (lock != null) {
+            if (lock.update()) {
+                select.forUpdate();
+            } else if (lock.share()) {
+                select.forShare();
+            }
+
+            if (lock.nowait()) {
+                select.nowait();
             }
         }
 

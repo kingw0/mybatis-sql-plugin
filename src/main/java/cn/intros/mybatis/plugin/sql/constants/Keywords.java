@@ -98,4 +98,10 @@ public class Keywords {
     public static final String DOT = ".";
 
     public static final String SPACE = " ";
+
+    public static final String KW_FOR_UPDATE = " FOR UPDATE";
+
+    public static final String KW_FOR_SHARE = " FOR SHARE";
+
+    public static final String KW_NOWAIT = " NOWAIT";
 }
