@@ -208,4 +208,9 @@ public class Select extends Sql<Select> {
     public Select nowait() {
         return append(KW_NOWAIT);
     }
+
+    public Select updateWait(int time) {
+        return append(KW_WAIT).append(time);
+    }
+
 }

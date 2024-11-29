@@ -13,4 +13,6 @@ public @interface Lock {
     boolean share() default false;
 
     boolean nowait() default false;
+
+    int updateWait() default 0;
 }

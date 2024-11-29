@@ -139,6 +139,8 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
 
             if (lock.nowait()) {
                 select.nowait();
+            } else if (lock.updateWait() > 0) {
+                select.updateWait(lock.updateWait());
             }
         }
 

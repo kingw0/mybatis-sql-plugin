@@ -104,4 +104,6 @@ public class Keywords {
     public static final String KW_FOR_SHARE = " FOR SHARE";
 
     public static final String KW_NOWAIT = " NOWAIT";
+
+    public static final String KW_WAIT = " WAIT ";
 }
