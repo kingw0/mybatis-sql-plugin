@@ -7,8 +7,9 @@ import cn.intros.mybatis.plugin.sql.SqlPart;
 import cn.intros.mybatis.plugin.sql.condition.Between;
 import cn.intros.mybatis.plugin.sql.condition.Comparison;
 import cn.intros.mybatis.plugin.sql.condition.In;
-import cn.intros.mybatis.plugin.sql.constants.Keywords;
+import cn.intros.mybatis.plugin.utils.StringUtils;
 
+import static cn.intros.mybatis.plugin.sql.constants.Keywords.*;
 import static cn.intros.mybatis.plugin.sql.expression.Literal.number;
 import static cn.intros.mybatis.plugin.sql.expression.Literal.text;
 
@@ -18,6 +19,9 @@ import static cn.intros.mybatis.plugin.sql.expression.Literal.text;
  * @author teddy
  */
 public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
+
+    protected String alias;
+
     /**
      * @param expression
      * @param <S>
@@ -27,7 +31,13 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
         return new Expression<S>() {
             @Override
             public S write(S sql) {
-                return sql.append(expression);
+                sql.append(expression);
+
+                if (StringUtils.isNotBlank(alias)) {
+                    sql.append(KW_AS).append(alias);
+                }
+
+                return sql;
             }
         };
     }
@@ -44,13 +54,19 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
         return new Expression<S>() {
             @Override
             public S write(S sql) {
-                sql.append(func).append(Keywords.OPEN_BRACKET);
+                sql.append(func).append(OPEN_BRACKET);
 
                 if (expressions != null && expressions.length > 0) {
-                    Joiner.join(sql, Keywords.COMMA_WITH_SPACE, expressions);
+                    Joiner.join(sql, COMMA_WITH_SPACE, expressions);
                 }
 
-                return sql.append(Keywords.CLOSE_BRACKET);
+                sql.append(CLOSE_BRACKET);
+
+                if (StringUtils.isNotBlank(alias)) {
+                    sql.append(KW_AS).append(alias);
+                }
+
+                return sql;
             }
         };
     }
@@ -66,7 +82,7 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
         return new Expression<S>() {
             @Override
             public S write(S sql) {
-                return expression.write(sql.append(Keywords.OPEN_BRACKET)).append(Keywords.CLOSE_BRACKET);
+                return expression.write(sql.append(OPEN_BRACKET)).append(CLOSE_BRACKET);
             }
         };
     }
@@ -82,7 +98,7 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
         return new Expression<S>() {
             @Override
             public S write(S sql) {
-                return sql.append(Keywords.OPEN_BRACKET).append(select).append(Keywords.CLOSE_BRACKET);
+                return sql.append(OPEN_BRACKET).append(select).append(CLOSE_BRACKET);
             }
         };
     }
@@ -94,6 +110,11 @@ public abstract class Expression<S extends Sql<S>> extends SqlPart<S> {
                 return sql.append(select);
             }
         };
+    }
+
+    public Expression<S> as(String alias) {
+        this.alias = alias;
+        return this;
     }
 
     /**
