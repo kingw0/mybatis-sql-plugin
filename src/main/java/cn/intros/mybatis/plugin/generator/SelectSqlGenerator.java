@@ -54,7 +54,7 @@ public class SelectSqlGenerator extends DefaultSqlGenerator {
             for (ColumnInfo columnInfo : this.columns.values()) {
                 columnList.add(StringUtils.isNotBlank(columnInfo.expression())
                     ? Expression.expression(columnInfo.expression()) :
-                    Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
+                    Column.<Select>column(this.alias, columnInfo.column()).as(columnInfo.prop()));
             }
 
             for (int i = 0, len = this.parameters.length; i < len; i++) {

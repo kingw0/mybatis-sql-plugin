@@ -1,7 +1,7 @@
 package cn.intros.mybatis.plugin.sql.expression;
 
-import cn.intros.mybatis.plugin.sql.constants.Keywords;
 import cn.intros.mybatis.plugin.sql.Sql;
+import cn.intros.mybatis.plugin.sql.constants.Keywords;
 import cn.intros.mybatis.plugin.utils.StringUtils;
 
 public class Column<S extends Sql<S>> extends Expression<S> {
@@ -39,7 +39,7 @@ public class Column<S extends Sql<S>> extends Expression<S> {
         return new Column(columnExpr);
     }
 
-    public static Column column(String table, String column) {
+    public static <S extends Sql<S>> Column<S> column(String table, String column) {
         return new Column(table, column);
     }
 
@@ -50,6 +50,10 @@ public class Column<S extends Sql<S>> extends Expression<S> {
     public Column<S> as(String alias) {
         this.alias = alias;
         return this;
+    }
+
+    public String column() {
+        return this.column;
     }
 
     @Override

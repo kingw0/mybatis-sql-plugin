@@ -1,14 +1,13 @@
 package cn.intros.mybatis.plugin.sql;
 
-import cn.intros.mybatis.plugin.mapping.ColumnInfo;
 import cn.intros.mybatis.plugin.mapping.MappingInfo;
 import cn.intros.mybatis.plugin.mapping.MappingInfoRegistry;
 import cn.intros.mybatis.plugin.sql.expression.Column;
 import cn.intros.mybatis.plugin.utils.StringUtils;
 
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static cn.intros.mybatis.plugin.sql.constants.Keywords.*;
@@ -26,8 +25,6 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
     private Select select;
 
     private String alias;
-
-    private List<Column<S>> columns;
 
     protected Table(String table) {
         this.table = table;
@@ -67,7 +64,16 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
     }
 
     public List<Column<S>> columns(String... columns) {
-        return Arrays.stream(columns).map(this::column).collect(Collectors.toList());
+        if (this.mappingClass == null) {
+            throw new IllegalStateException("Mapping class is null!");
+        }
+
+        Set<String> columnSet = Arrays.stream(columns).collect(Collectors.toSet());
+
+        return registry.mappingInfo(this.mappingClass).columnInfos().stream()
+            .filter(columnInfo -> columnSet.contains(columnInfo.column()))
+            .map(columnInfo -> Column.<S>column(this.alias, columnInfo.column()).as(columnInfo.prop()))
+            .collect(Collectors.toList());
     }
 
     public List<Column<S>> columns() {
@@ -75,12 +81,9 @@ public class Table<S extends Sql<S>> extends SqlPart<S> {
             throw new IllegalStateException("Mapping class is null!");
         }
 
-        this.columns = new LinkedList<>();
-
-        for (ColumnInfo columnInfo : registry.mappingInfo(this.mappingClass).columnInfos()) {
-            columns.add(Column.column(this.alias, columnInfo.column()).as(columnInfo.prop()));
-        }
-        return this.columns;
+        return registry.mappingInfo(this.mappingClass).columnInfos().stream()
+            .map(columnInfo -> Column.<S>column(this.alias, columnInfo.column()).as(columnInfo.prop()))
+            .collect(Collectors.toList());
     }
 
     @Override
