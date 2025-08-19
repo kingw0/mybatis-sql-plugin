@@ -9,17 +9,15 @@ At present, the plug-in only supports MySQL database
 Maven(Inside the pom.xml)
 ```xml
         <dependency>
-            <groupId>cn.intros.mybatis</groupId>
+            <groupId>io.github.kingw0.mybatis</groupId>
             <artifactId>mybatis-sql-plugin</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         
         <repository>
-            <id>sonatype-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <id>sonatype</id>
+            <name>sonatype</name>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </repository>
 ```
 
